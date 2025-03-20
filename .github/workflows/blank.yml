@@ -26,15 +26,22 @@ jobs:
     needs: install-tor
 
     steps:
+      - name: Check if bridges.json exists
+        run: |
+          if [ ! -f ../config/bridges.json ]; then
+            echo "../config/bridges.json not found!"
+            exit 1
+          fi
+
       - name: Configure and Start Tor with obfs4 Bridge
         run: |
-          BRIDGE=$(jq -r '.bridges | .[0]' config/bridges.json)
-          
+          BRIDGE=$(jq -r '.bridges | .[0]' ../config/bridges.json)
+
           echo "UseBridges 1" > torrc
           echo "ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy" >> torrc
           echo "Bridge $BRIDGE" >> torrc
           echo "Log notice stdout" >> torrc
-          
+
           tor -f torrc &
           sleep 20
 

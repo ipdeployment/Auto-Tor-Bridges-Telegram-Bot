@@ -11,45 +11,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-  install-tor:
-    runs-on: ubuntu-latest
-    needs: fetch-bridges
-
-    steps:
       - name: Install Tor and obfs4proxy
         run: |
           sudo apt-get update
           sudo apt-get install -y tor obfs4proxy jq
 
-  configure-tor:
-    runs-on: ubuntu-latest
-    needs: install-tor
-
-    steps:
-      - name: Check if bridges.json exists
-        run: |
-          if [ ! -f ../config/bridges.json ]; then
-            echo "../config/bridges.json not found!"
-            exit 1
-          fi
-
       - name: Configure and Start Tor with obfs4 Bridge
         run: |
-          BRIDGE=$(jq -r '.bridges | .[0]' ../config/bridges.json)
-
+          BRIDGE=$(jq -r '.bridges | .[0]' config/bridges.json)
+          
           echo "UseBridges 1" > torrc
           echo "ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy" >> torrc
           echo "Bridge $BRIDGE" >> torrc
           echo "Log notice stdout" >> torrc
-
+          
           tor -f torrc &
           sleep 20
 
-  setup-python:
-    runs-on: ubuntu-latest
-    needs: configure-tor
-
-    steps:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -60,30 +38,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 python-telegram-bot requests[socks]
 
-  fetch-and-send-bridges:
-    runs-on: ubuntu-latest
-    needs: setup-python
-
-    steps:
       - name: Fetch and Send Bridges
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python scripts/fetch_bridges.py
 
-  update-bridge-list:
-    runs-on: ubuntu-latest
-    needs: fetch-and-send-bridges
-
-    steps:
       - name: Update Bridge List
         run: python scripts/update_bridge_list.py
 
-  commit-and-push:
-    runs-on: ubuntu-latest
-    needs: update-bridge-list
-
-    steps:
       - name: Commit and Push Updated Bridges
         run: |
           git config --global user.name "github-actions[bot]"
@@ -94,13 +57,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  handle-failure:
-    runs-on: ubuntu-latest
-    if: failure()
-    needs: [fetch-bridges, install-tor, configure-tor, setup-python, fetch-and-send-bridges, update-bridge-list, commit-and-push]
-
-    steps:
       - name: Handle failure notification
+        if: failure()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

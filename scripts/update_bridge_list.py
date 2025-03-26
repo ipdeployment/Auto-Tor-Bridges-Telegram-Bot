@@ -1,14 +1,14 @@
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 logging.basicConfig(level=logging.INFO)
 
 TEMP_DIR = os.path.abspath("temp")
 
 def update_bridges():
-    update_start_time = datetime.utcnow()
+    update_start_time = datetime.now(timezone.utc)
     files = [
         "config/obfs4_ipv4.json",
         "config/obfs4_ipv6.json",
@@ -43,7 +43,7 @@ def update_bridges():
                 with open(summary_file, "a") as sf:
                     sf.write(f"Updated: {file} - {len(sorted_bridges)} bridges\n")
 
-        update_end_time = datetime.utcnow()
+        update_end_time = datetime.now(timezone.utc)
         total_duration = (update_end_time - update_start_time).total_seconds()
         
         with open(summary_file, "a") as sf:

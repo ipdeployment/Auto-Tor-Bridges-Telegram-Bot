@@ -7,20 +7,31 @@ import json
 import logging
 import random
 import subprocess
+import shutil
 import time
 from datetime import datetime
+import aiohttp
 
 logging.basicConfig(level=logging.INFO)
 
 HISTORY_FILE = "config/history.json"
 FAILED_BRIDGES_FILE = "config/failed_bridges.json"
 OBFS4_IPV4_FILE = "config/obfs4_ipv4.json"
-TEMP_DIR = os.path.abspath("temp")  # مسیر مطلق برای temp
+TEMP_DIR = os.path.abspath("temp")
 
 def ensure_temp_dir():
     if not os.path.exists(TEMP_DIR):
         os.makedirs(TEMP_DIR)
+    for subdir in ["logs", "qr"]:
+        os.makedirs(os.path.join(TEMP_DIR, subdir), exist_ok=True)
     return TEMP_DIR
+
+def clean_temp_dir():
+    base_temp_dir = ensure_temp_dir()
+    shutil.rmtree(base_temp_dir, ignore_errors=True)
+    os.makedirs(base_temp_dir)
+    os.makedirs(os.path.join(base_temp_dir, "logs"))
+    os.makedirs(os.path.join(base_temp_dir, "qr"))
 
 def load_history():
     default_history = {"last_bridge": None, "used_bridges": []}
@@ -87,11 +98,11 @@ def start_tor(bridge):
     ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy
     Bridge {bridge}
     SocksPort 9051
-    Log notice file {temp_dir}/tor.log
+    Log notice file {temp_dir}/logs/tor.log
     """.format(bridge=bridge, temp_dir=base_temp_dir)
 
     torrc_file = os.path.join(base_temp_dir, "torrc_test")
-    log_file = os.path.join(base_temp_dir, "tor.log")
+    log_file = os.path.join(base_temp_dir, "logs", "tor.log")
     with open(torrc_file, "w") as f:
         f.write(torrc.strip())
 
@@ -111,17 +122,39 @@ def start_tor(bridge):
     logging.error(f"Tor failed to bootstrap with bridge: {bridge}")
     return None
 
+async def fetch_url(session, url, name, failed_bridges):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0",
+        "Referer": "https://bridges.torproject.org"
+    }
+    proxies = {'http': 'socks5h://127.0.0.1:9051', 'https': 'socks5h://127.0.0.1:9051'}
+    for attempt in range(5):
+        try:
+            async with session.get(url, headers=headers, proxy=proxies['https'], timeout=30) as response:
+                response.raise_for_status()
+                text = await response.text()
+                soup = BeautifulSoup(text, 'html.parser')
+                bridge_elements = soup.find_all('pre', class_='bridge-line')[:5]
+                bridges = [elem.text.strip() for elem in bridge_elements if elem.text.strip() not in failed_bridges]
+                if not bridges:
+                    all_text = soup.get_text()
+                    if 'obfs4' in name:
+                        bridges = [line.strip() for line in all_text.split('\n') if 'obfs4' in line and 'cert=' in line and line.strip() not in failed_bridges][:5]
+                    elif 'webtunnel' in name:
+                        bridges = [line.strip() for line in all_text.split('\n') if 'webtunnel' in line and 'http' in line and line.strip() not in failed_bridges][:5]
+                return name, bridges
+        except Exception as e:
+            logging.error(f"Failed to fetch {url}: {e}")
+            if attempt == 4:
+                return name, []
+            await asyncio.sleep(10)
+
 async def fetch_bridges(tor_process=None):
     urls = {
         "obfs4_ipv4": "https://bridges.torproject.org/bridges?transport=obfs4",
         "obfs4_ipv6": "https://bridges.torproject.org/bridges?transport=obfs4&ipv6=yes",
         "webtunnel_ipv4": "https://bridges.torproject.org/bridges?transport=webtunnel",
         "webtunnel_ipv6": "https://bridges.torproject.org/bridges?transport=webtunnel&ipv6=yes"
-    }
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0",
-        "Referer": "https://bridges.torproject.org"
     }
 
     history = load_history()
@@ -147,39 +180,15 @@ async def fetch_bridges(tor_process=None):
         logging.error("No working Tor process available.")
         return None, None
 
-    proxies = {
-        'http': 'socks5h://127.0.0.1:9051',
-        'https': 'socks5h://127.0.0.1:9051'
-    }
-
     all_bridges = {}
     fetch_start_time = datetime.utcnow()
-    for name, url in urls.items():
-        for attempt in range(5):
-            try:
-                response = requests.get(url, headers=headers, proxies=proxies, timeout=30)
-                response.raise_for_status()
-                soup = BeautifulSoup(response.text, 'html.parser')
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetch_url(session, url, name, failed_bridges) for name, url in urls.items()]
+        results = await asyncio.gather(*tasks)
+        for name, bridges in results:
+            all_bridges[name] = bridges
 
-                bridge_elements = soup.find_all('pre', class_='bridge-line')[:5]
-                bridges = [element.text.strip() for element in bridge_elements if element.text.strip() not in failed_bridges]
-
-                if not bridges:
-                    all_text = soup.get_text()
-                    if 'obfs4' in name:
-                        bridges = [line.strip() for line in all_text.split('\n') if 'obfs4' in line and 'cert=' in line and line.strip() not in failed_bridges][:5]
-                    elif 'webtunnel' in name:
-                        bridges = [line.strip() for line in all_text.split('\n') if 'webtunnel' in line and 'http' in line and line.strip() not in failed_bridges][:5]
-
-                all_bridges[name] = bridges
-                break
-            except requests.RequestException as e:
-                logging.error(f"Failed to fetch {url}: {e}")
-                if attempt == 4:
-                    continue
-                time.sleep(10)
-
-    if not all_bridges:
+    if not any(all_bridges.values()):
         if tor_process:
             tor_process.terminate()
         return None, None
@@ -215,17 +224,15 @@ async def send_bridges_file(bot, chat_id, bridges_dict, fetch_start_time):
 
 async def send_qr_7z(bot, chat_id, bridges_dict):
     base_temp_dir = ensure_temp_dir()
-    qr_dir = os.path.join(base_temp_dir, "qr_codes")
-    if not os.path.exists(qr_dir):
-        os.makedirs(qr_dir)
+    qr_dir = os.path.join(base_temp_dir, "qr")
+    sevenz_file = os.path.join(base_temp_dir, "qr", "bridges_qr_codes.7z")
 
     for bridge_type, bridges in bridges_dict.items():
         for i, bridge in enumerate(bridges):
             qr_file = os.path.join(qr_dir, f"{bridge_type}_{i}.png")
             subprocess.run(["qrencode", "-o", qr_file, bridge])
 
-    sevenz_file = os.path.join(base_temp_dir, "bridges_qr_codes.7z")
-    subprocess.run(["7z", "a", sevenz_file, f"{qr_dir}/*"])
+    subprocess.run(["7z", "a", "-mx9", sevenz_file, f"{qr_dir}/*"])  # حداکثر فشرده‌سازی
 
     with open(sevenz_file, "rb") as f:
         await bot.send_document(chat_id=chat_id, document=f, caption="QR Codes for Tor Bridges (7z Archive)")
@@ -270,6 +277,7 @@ def rewrite_and_sort_json_files(bridges_dict):
         logging.info(f"Rewrote and sorted {file_path} with {len(sorted_bridges)} bridges.")
 
 async def main():
+    clean_temp_dir()  # پاکسازی قبل از شروع
     workflow_start_time = datetime.utcnow()
     bridges, tor_process, fetch_start_time = await fetch_bridges()
     workflow_end_time = datetime.utcnow()

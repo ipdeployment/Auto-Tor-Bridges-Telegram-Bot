@@ -11,7 +11,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Tor, obfs4proxy, jq, qrencode, and 7zip
+      - name: Install Tor, obfs4proxy, jq, qrencode and 7zip
         run: |
           sudo apt-get update
           sudo apt-get install -y tor obfs4proxy jq qrencode p7zip-full
@@ -19,50 +19,30 @@ jobs:
       - name: Configure and Start Tor with obfs4 Bridge
         run: |
           mkdir -p config
-          max_attempts=3
-          attempt=1
-          while [ $attempt -le $max_attempts ]; do
-            echo "Attempt $attempt of $max_attempts to bootstrap Tor..."
-            if [ -f config/history.json ]; then
-              BRIDGE=$(jq -r '.last_bridge // ""' config/history.json)
-              if [ -z "$BRIDGE" ] && [ -f config/obfs4_ipv4.json ]; then
-                COUNT=$(jq -r '.bridges | length' config/obfs4_ipv4.json)
-                if [ "$COUNT" -gt 0 ]; then
-                  INDEX=$(shuf -i 0-$((COUNT-1)) -n 1)
-                  BRIDGE=$(jq -r ".bridges[$INDEX]" config/obfs4_ipv4.json)
-                fi
+          if [ -f config/history.json ]; then
+            BRIDGE=$(jq -r '.last_bridge // ""' config/history.json)
+            if [ -z "$BRIDGE" ] && [ -f config/obfs4_ipv4.json ]; then
+              COUNT=$(jq -r '.bridges | length' config/obfs4_ipv4.json)
+              if [ "$COUNT" -gt 0 ]; then
+                INDEX=$(shuf -i 0-$((COUNT-1)) -n 1)
+                BRIDGE=$(jq -r ".bridges[$INDEX]" config/obfs4_ipv4.json)
               fi
             fi
-            if [ -z "$BRIDGE" ]; then
-              BRIDGE="obfs4 72.10.162.51:12693 8F219F64DC11351F00C3A50B64990EE50E784F74 cert=/I3NYd0UcxUh83Xmsj2j8GNOeNBHmJ8jspO0/3ijqKxAlIBedJ9/AC80fXkY6IyEwXYzQQ iat-mode=1"
-            fi
-            echo "UseBridges 1" > torrc
-            echo "ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy" >> torrc
-            echo "Bridge $BRIDGE" >> torrc
-            echo "SocksPort 9051" >> torrc
-            echo "Log notice file tor.log" >> torrc
-            tor -f torrc &
-            sleep 60  # افزایش زمان انتظار به 60 ثانیه
-            if grep -q "Bootstrapped 100%" tor.log; then
-              echo "Tor bootstrapped successfully on attempt $attempt."
-              break
-            else
-              echo "Tor failed to bootstrap on attempt $attempt. Check logs:"
-              cat tor.log
-              pkill -f tor || echo "No Tor process to kill"
-              if [ $attempt -eq $max_attempts ]; then
-                echo "All $max_attempts attempts failed. Exiting."
-                exit 1
-              fi
-              sleep 10  # مکث قبل از تلاش بعدی
-            fi
-            attempt=$((attempt + 1))
-          done
+          fi
+          if [ -z "$BRIDGE" ]; then
+            BRIDGE="obfs4 72.10.162.51:12693 8F219F64DC11351F00C3A50B64990EE50E784F74 cert=/I3NYd0UcxUh83Xmsj2j8GNOeNBHmJ8jspO0/3ijqKxAlIBedJ9/AC80fXkY6IyEwXYzQQ iat-mode=1"
+          fi
+          echo "UseBridges 1" > torrc
+          echo "ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy" >> torrc
+          echo "Bridge $BRIDGE" >> torrc
+          echo "Log notice stdout" >> torrc
+          tor -f torrc &
+          sleep 20
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.13'
+          python-version: '3.x'
 
       - name: Install Python dependencies
         run: |
@@ -77,10 +57,11 @@ jobs:
           mkdir -p temp
           pkill -f tor || echo "No Tor process to kill"
           python scripts/fetch_bridges.py
-          [ -f temp/bridges.txt ] && git add temp/bridges.txt || echo "No bridges.txt to add"
-          [ -f temp/qr/bridges_qr_codes.7z ] && git add temp/qr/bridges_qr_codes.7z || echo "No bridges_qr_codes.7z to add"
+          timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+          [ -f temp/bridges_${timestamp}.txt ] && git add temp/bridges_${timestamp}.txt || echo "No bridges file to add"
+          [ -f temp/bridges_qr_codes_${timestamp}.7z ] && git add temp/bridges_qr_codes_${timestamp}.7z || echo "No QR codes archive to add"
           git add config/*.json || echo "No config files to add"
-          git commit -m "Update bridges.txt, QR codes 7z, and JSON files with latest bridges" || echo "No changes to commit"
+          git commit -m "Update bridges and QR codes with timestamp $timestamp" || echo "No changes to commit"
           git push
 
       - name: Update Bridge List
@@ -91,8 +72,9 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
           git add config/*.json temp/*
-          git commit -m "Append new Tor bridges, update summary, and temp files to repository" || echo "No changes to commit"
+          git commit -m "Append new Tor bridges and temp files $timestamp" || echo "No changes to commit"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -102,6 +84,5 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          WORKFLOW_START_TIME: ${{ github.event.workflow_run.created_at }}
         run: |
           python scripts/notify_failure.py

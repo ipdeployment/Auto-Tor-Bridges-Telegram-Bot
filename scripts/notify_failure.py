@@ -7,10 +7,9 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 
 async def send_failure_notification():
-    # زمان شروع باید از Workflow پاس بشه، اینجا به صورت موقت فرض می‌کنیم
     workflow_end_time = datetime.utcnow()
-    # برای تست، فرض می‌کنیم Workflow 10 ثانیه پیش شروع شده
-    workflow_start_time = workflow_end_time - timedelta(seconds=10)
+    workflow_start_time_str = os.environ.get('WORKFLOW_START_TIME', workflow_end_time.strftime('%Y-%m-%dT%H:%M:%SZ'))
+    workflow_start_time = datetime.strptime(workflow_start_time_str, '%Y-%m-%dT%H:%M:%SZ')
     total_duration = (workflow_end_time - workflow_start_time).total_seconds()
 
     bot = telegram.Bot(token=os.environ['TELEGRAM_BOT_TOKEN'])
@@ -25,5 +24,4 @@ async def send_failure_notification():
     logging.info("Failure notification sent to Telegram.")
 
 if __name__ == "__main__":
-    from datetime import timedelta  # برای تست موقت
     asyncio.run(send_failure_notification())

@@ -2,14 +2,14 @@ import os
 import telegram
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 logging.basicConfig(level=logging.INFO)
 
 async def send_failure_notification():
-    workflow_end_time = datetime.utcnow()
+    workflow_end_time = datetime.now(timezone.utc)
     workflow_start_time_str = os.environ.get('WORKFLOW_START_TIME', workflow_end_time.strftime('%Y-%m-%dT%H:%M:%SZ'))
-    workflow_start_time = datetime.strptime(workflow_start_time_str, '%Y-%m-%dT%H:%M:%SZ')
+    workflow_start_time = datetime.strptime(workflow_start_time_str, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
     total_duration = (workflow_end_time - workflow_start_time).total_seconds()
 
     bot = telegram.Bot(token=os.environ['TELEGRAM_BOT_TOKEN'])

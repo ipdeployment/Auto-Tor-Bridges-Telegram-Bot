@@ -35,9 +35,15 @@ jobs:
           echo "UseBridges 1" > torrc
           echo "ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy" >> torrc
           echo "Bridge $BRIDGE" >> torrc
-          echo "Log notice stdout" >> torrc
+          echo "SocksPort 9051" >> torrc
+          echo "Log notice file tor.log" >> torrc
           tor -f torrc &
           sleep 20
+          if ! grep -q "Bootstrapped 100%" tor.log; then
+            echo "Tor failed to bootstrap. Check logs:"
+            cat tor.log
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v4

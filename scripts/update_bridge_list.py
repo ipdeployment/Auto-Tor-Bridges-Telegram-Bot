@@ -5,6 +5,8 @@ from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 
+TEMP_DIR = os.path.abspath("temp")
+
 def update_bridges():
     update_start_time = datetime.utcnow()
     files = [
@@ -14,7 +16,7 @@ def update_bridges():
         "config/webtunnel_ipv6.json"
     ]
     
-    base_temp_dir = os.path.abspath("temp")
+    base_temp_dir = TEMP_DIR
     os.makedirs(base_temp_dir, exist_ok=True)
     summary_file = os.path.join(base_temp_dir, "bridge_update_summary.txt")
     

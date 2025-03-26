@@ -58,24 +58,11 @@ def load_failed_bridges():
     except (FileNotFoundError, json.JSONDecodeError):
         return set()
 
-def save_failed_bridge(bridge, source_file):
+def save_failed_bridge(bridge):
     failed_bridges = load_failed_bridges()
     failed_bridges.add(bridge)
     with open(FAILED_BRIDGES_FILE, "w") as f:
         json.dump({"failed_bridges": list(failed_bridges)}, f, indent=4)
-    
-    # حذف پل از فایل اصلی
-    try:
-        with open(source_file, "r") as f:
-            data = json.load(f)
-            bridges = data.get("bridges", [])
-        if bridge in bridges:
-            bridges.remove(bridge)
-            with open(source_file, "w") as f:
-                json.dump({"bridges": bridges}, f, indent=4)
-            logging.info(f"Removed failed bridge '{bridge}' from {source_file}")
-    except (FileNotFoundError, json.JSONDecodeError):
-        logging.warning(f"Could not remove bridge from {source_file}: File not found or invalid JSON")
 
 def load_obfs4_ipv4_bridges():
     try:
@@ -86,10 +73,23 @@ def load_obfs4_ipv4_bridges():
         return set()
 
 def load_all_existing_bridges():
-    # فقط obfs4_ipv4 را بارگذاری می‌کنیم
-    return load_obfs4_ipv4_bridges()
+    bridge_files = {
+        "obfs4_ipv4": "config/obfs4_ipv4.json",
+        "obfs4_ipv6": "config/obfs4_ipv6.json",
+        "webtunnel_ipv4": "config/webtunnel_ipv4.json",
+        "webtunnel_ipv6": "config/webtunnel_ipv6.json"
+    }
+    all_bridges = set()
+    for file_path in bridge_files.values():
+        try:
+            with open(file_path, "r") as f:
+                data = json.load(f)
+                all_bridges.update(data.get("bridges", []))
+        except (FileNotFoundError, json.JSONDecodeError):
+            continue
+    return all_bridges
 
-def start_tor(bridge, source_file):
+def start_tor(bridge):
     subprocess.run(["pkill", "-f", "tor"], check=False)
     base_temp_dir = ensure_temp_dir()
     torrc = """
@@ -119,12 +119,14 @@ def start_tor(bridge, source_file):
                     return process
     process.terminate()
     logging.error(f"Tor failed to bootstrap with bridge: {bridge}")
-    save_failed_bridge(bridge, source_file)  # ذخیره و حذف پل ناموفق
     return None
 
 async def fetch_bridges(tor_process=None):
     urls = {
-        "obfs4_ipv4": "https://bridges.torproject.org/bridges?transport=obfs4"
+        "obfs4_ipv4": "https://bridges.torproject.org/bridges?transport=obfs4",
+        "obfs4_ipv6": "https://bridges.torproject.org/bridges?transport=obfs4&ipv6=yes",
+        "webtunnel_ipv4": "https://bridges.torproject.org/bridges?transport=webtunnel",
+        "webtunnel_ipv6": "https://bridges.torproject.org/bridges?transport=webtunnel&ipv6=yes"
     }
 
     headers = {
@@ -134,21 +136,26 @@ async def fetch_bridges(tor_process=None):
 
     history = load_history()
     used_bridges = history["used_bridges"]
+    failed_bridges = load_failed_bridges()
     default_bridge = "obfs4 72.10.162.51:12693 8F219F64DC11351F00C3A50B64990EE50E784F74 cert=/I3NYd0UcxUh83Xmsj2j8GNOeNBHmJ8jspO0/3ijqKxAlIBedJ9/AC80fXkY6IyEwXYzQQ iat-mode=1"
 
     ensure_temp_dir()
     if not tor_process:
-        obfs4_ipv4_bridges = load_obfs4_ipv4_bridges() - set(used_bridges[-1:])
-        source_file = OBFS4_IPV4_FILE
+        obfs4_ipv4_bridges = load_obfs4_ipv4_bridges() - set(used_bridges[-1:]) - failed_bridges
         if obfs4_ipv4_bridges:
             selected_bridge = random.choice(list(obfs4_ipv4_bridges))
         else:
             selected_bridge = default_bridge
-        tor_process = start_tor(selected_bridge, source_file)
+        tor_process = start_tor(selected_bridge)
         if not tor_process:
-            tor_process = start_tor(selected_bridge, source_file)  # Retry once
+            tor_process = start_tor(selected_bridge)  # Retry once
             if not tor_process:
+                save_failed_bridge(selected_bridge)
                 return None, None, datetime.now(timezone.utc)
+
+    if not tor_process:
+        logging.error("No working Tor process available.")
+        return None, None, datetime.now(timezone.utc)
 
     proxies = {
         'http': 'socks5h://127.0.0.1:9051',
@@ -165,11 +172,14 @@ async def fetch_bridges(tor_process=None):
                 soup = BeautifulSoup(response.text, 'html.parser')
 
                 bridge_elements = soup.find_all('pre', class_='bridge-line')[:5]
-                bridges = [element.text.strip() for element in bridge_elements]
+                bridges = [element.text.strip() for element in bridge_elements if element.text.strip() not in failed_bridges]
 
                 if not bridges:
                     all_text = soup.get_text()
-                    bridges = [line.strip() for line in all_text.split('\n') if 'obfs4' in line and 'cert=' in line][:5]
+                    if 'obfs4' in name:
+                        bridges = [line.strip() for line in all_text.split('\n') if 'obfs4' in line and 'cert=' in line and line.strip() not in failed_bridges][:5]
+                    elif 'webtunnel' in name:
+                        bridges = [line.strip() for line in all_text.split('\n') if 'webtunnel' in line and 'http' in line and line.strip() not in failed_bridges][:5]
 
                 all_bridges[name] = bridges
                 break
@@ -205,13 +215,13 @@ async def send_bridges_file(bot, chat_id, bridges_dict, fetch_start_time):
         for bridge_type, bridges in bridges_dict.items():
             if bridges:
                 f.write(f"{bridge_type.replace('_', ' ').capitalize()}:\n")
-                f.write(f"Source URL: https://bridges.torproject.org/bridges?transport=obfs4\n")
+                f.write(f"Source URL: https://bridges.torproject.org/bridges?transport={bridge_type.split('_')[0]}{'&ipv6=yes' if 'ipv6' in bridge_type else ''}\n")
                 for i, bridge in enumerate(bridges):
                     f.write(f"Bridge {i+1}: {bridge}\n")
                     f.write(f"Added on: {fetch_time_str}\n\n")
     if os.path.getsize(bridges_file) > 0:
         with open(bridges_file, "rb") as f:
-            await bot.send_document(chat_id=chat_id, document=f, caption="Latest Tor Bridges (obfs4 IPv4)")
+            await bot.send_document(chat_id=chat_id, document=f, caption="Latest Tor Bridges (All Fetched)")
 
 async def send_qr_7z(bot, chat_id, bridges_dict):
     base_temp_dir = ensure_temp_dir()
@@ -226,7 +236,7 @@ async def send_qr_7z(bot, chat_id, bridges_dict):
     subprocess.run(["7z", "a", "-mx9", sevenz_file, f"{qr_dir}/*"])
 
     with open(sevenz_file, "rb") as f:
-        await bot.send_document(chat_id=chat_id, document=f, caption="QR Codes for Tor Bridges (obfs4 IPv4)")
+        await bot.send_document(chat_id=chat_id, document=f, caption="QR Codes for Tor Bridges (7z Archive)")
 
 def append_to_json(file_path, new_bridges, all_existing_bridges):
     try:
@@ -243,7 +253,10 @@ def append_to_json(file_path, new_bridges, all_existing_bridges):
 
 def rewrite_and_sort_json_files(bridges_dict):
     bridge_files = {
-        "obfs4_ipv4": "config/obfs4_ipv4.json"
+        "obfs4_ipv4": "config/obfs4_ipv4.json",
+        "obfs4_ipv6": "config/obfs4_ipv6.json",
+        "webtunnel_ipv4": "config/webtunnel_ipv4.json",
+        "webtunnel_ipv6": "config/webtunnel_ipv6.json"
     }
     all_bridges = set()
     for bridges in bridges_dict.values():
@@ -267,7 +280,7 @@ def rewrite_and_sort_json_files(bridges_dict):
 async def main():
     clean_temp_dir()
     workflow_start_time = datetime.now(timezone.utc)
-    max_attempts = 3
+    max_attempts = 3  # حداکثر تعداد تلاش‌ها
     attempt = 0
 
     while attempt < max_attempts:
@@ -276,12 +289,12 @@ async def main():
         bridges, tor_process, fetch_start_time = await fetch_bridges()
 
         if bridges is not None and any(bridges.values()):
-            break
+            break  # اگه پل‌ها با موفقیت fetch شدن، از حلقه خارج می‌شیم
 
         logging.warning(f"Attempt {attempt} failed. Restarting process...")
         if tor_process:
             tor_process.terminate()
-        time.sleep(10)
+        time.sleep(10)  # یه مکث کوتاه قبل از تلاش بعدی
 
     workflow_end_time = datetime.now(timezone.utc)
     total_duration = (workflow_end_time - workflow_start_time).total_seconds()
@@ -295,25 +308,36 @@ async def main():
         )
     else:
         message = (
-            f"🚀 <b>Latest Tor Bridges (obfs4 IPv4):</b>\n\n"
+            f"🚀 <b>Latest Tor Bridges:</b>\n\n"
             f"Workflow Start Time: {workflow_start_time.strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
             f"Bridge Fetch Attempt Time: {fetch_start_time.strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
             f"Total Duration: {total_duration:.2f} seconds\n"
             f"Attempts Made: {attempt}\n\n"
         )
+        found_any_new = False
         all_existing_bridges = load_all_existing_bridges()
-        bridge_files = {"obfs4_ipv4": "config/obfs4_ipv4.json"}
+
+        bridge_files = {
+            "obfs4_ipv4": "config/obfs4_ipv4.json",
+            "obfs4_ipv6": "config/obfs4_ipv6.json",
+            "webtunnel_ipv4": "config/webtunnel_ipv4.json",
+            "webtunnel_ipv6": "config/webtunnel_ipv6.json"
+        }
 
         for bridge_type, bridge_list in bridges.items():
             unique_new_bridges = append_to_json(bridge_files[bridge_type], bridge_list, all_existing_bridges)
             all_existing_bridges.update(unique_new_bridges)
 
-            message += f"<b>obfs4 IPv4:</b>\n"
+            message += f"<b>{bridge_type.replace('_', ' ').capitalize()}:</b>\n"
             if unique_new_bridges:
+                found_any_new = True
                 for bridge in unique_new_bridges:
                     message += f"<code>{bridge}</code>\n\n"
             else:
                 message += "<i>❌ No new bridges found</i>\n\n"
+
+        if not found_any_new:
+            message += "❌ <b>No new bridges found.</b>\nAll fetched bridges were duplicates."
 
     bot = telegram.Bot(token=os.environ['TELEGRAM_BOT_TOKEN'])
     chat_id = os.environ['TELEGRAM_CHAT_ID']

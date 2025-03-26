@@ -19,31 +19,45 @@ jobs:
       - name: Configure and Start Tor with obfs4 Bridge
         run: |
           mkdir -p config
-          if [ -f config/history.json ]; then
-            BRIDGE=$(jq -r '.last_bridge // ""' config/history.json)
-            if [ -z "$BRIDGE" ] && [ -f config/obfs4_ipv4.json ]; then
-              COUNT=$(jq -r '.bridges | length' config/obfs4_ipv4.json)
-              if [ "$COUNT" -gt 0 ]; then
-                INDEX=$(shuf -i 0-$((COUNT-1)) -n 1)
-                BRIDGE=$(jq -r ".bridges[$INDEX]" config/obfs4_ipv4.json)
+          max_attempts=3
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Attempt $attempt of $max_attempts to bootstrap Tor..."
+            if [ -f config/history.json ]; then
+              BRIDGE=$(jq -r '.last_bridge // ""' config/history.json)
+              if [ -z "$BRIDGE" ] && [ -f config/obfs4_ipv4.json ]; then
+                COUNT=$(jq -r '.bridges | length' config/obfs4_ipv4.json)
+                if [ "$COUNT" -gt 0 ]; then
+                  INDEX=$(shuf -i 0-$((COUNT-1)) -n 1)
+                  BRIDGE=$(jq -r ".bridges[$INDEX]" config/obfs4_ipv4.json)
+                fi
               fi
             fi
-          fi
-          if [ -z "$BRIDGE" ]; then
-            BRIDGE="obfs4 72.10.162.51:12693 8F219F64DC11351F00C3A50B64990EE50E784F74 cert=/I3NYd0UcxUh83Xmsj2j8GNOeNBHmJ8jspO0/3ijqKxAlIBedJ9/AC80fXkY6IyEwXYzQQ iat-mode=1"
-          fi
-          echo "UseBridges 1" > torrc
-          echo "ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy" >> torrc
-          echo "Bridge $BRIDGE" >> torrc
-          echo "SocksPort 9051" >> torrc
-          echo "Log notice file tor.log" >> torrc
-          tor -f torrc &
-          sleep 20
-          if ! grep -q "Bootstrapped 100%" tor.log; then
-            echo "Tor failed to bootstrap. Check logs:"
-            cat tor.log
-            exit 1
-          fi
+            if [ -z "$BRIDGE" ]; then
+              BRIDGE="obfs4 72.10.162.51:12693 8F219F64DC11351F00C3A50B64990EE50E784F74 cert=/I3NYd0UcxUh83Xmsj2j8GNOeNBHmJ8jspO0/3ijqKxAlIBedJ9/AC80fXkY6IyEwXYzQQ iat-mode=1"
+            fi
+            echo "UseBridges 1" > torrc
+            echo "ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy" >> torrc
+            echo "Bridge $BRIDGE" >> torrc
+            echo "SocksPort 9051" >> torrc
+            echo "Log notice file tor.log" >> torrc
+            tor -f torrc &
+            sleep 60  # افزایش زمان انتظار به 60 ثانیه
+            if grep -q "Bootstrapped 100%" tor.log; then
+              echo "Tor bootstrapped successfully on attempt $attempt."
+              break
+            else
+              echo "Tor failed to bootstrap on attempt $attempt. Check logs:"
+              cat tor.log
+              pkill -f tor || echo "No Tor process to kill"
+              if [ $attempt -eq $max_attempts ]; then
+                echo "All $max_attempts attempts failed. Exiting."
+                exit 1
+              fi
+              sleep 10  # مکث قبل از تلاش بعدی
+            fi
+            attempt=$((attempt + 1))
+          done
 
       - name: Set up Python
         uses: actions/setup-python@v4

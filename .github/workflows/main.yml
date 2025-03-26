@@ -42,12 +42,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.13'
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 python-telegram-bot requests[socks] aiohttp
+          pip install requests beautifulsoup4 python-telegram-bot requests[socks]
 
       - name: Fetch and Send Bridges
         env:

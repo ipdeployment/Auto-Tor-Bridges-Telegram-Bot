@@ -190,15 +190,9 @@ async def fetch_bridges(tor_process=None):
                 time.sleep(10)
 
     if not any(all_bridges.values()):
-        logging.warning("Failed to fetch new bridges; using fallback.")
         if tor_process:
             tor_process.terminate()
-        # Fallback به پل‌های موجود
-        existing_bridges = load_all_existing_bridges()
-        if existing_bridges:
-            all_bridges = {k: list(existing_bridges)[:5] for k in urls.keys()}
-        else:
-            return None, None, fetch_start_time
+        return None, None, fetch_start_time
 
     if tor_process:
         used_bridges.append(selected_bridge)
@@ -286,13 +280,28 @@ def rewrite_and_sort_json_files(bridges_dict):
 async def main():
     clean_temp_dir()
     workflow_start_time = datetime.now(timezone.utc)
-    bridges, tor_process, fetch_start_time = await fetch_bridges()
+    max_attempts = 3  # حداکثر تعداد تلاش‌ها
+    attempt = 0
+
+    while attempt < max_attempts:
+        attempt += 1
+        logging.info(f"Attempt {attempt} of {max_attempts} to fetch bridges.")
+        bridges, tor_process, fetch_start_time = await fetch_bridges()
+
+        if bridges is not None and any(bridges.values()):
+            break  # اگه پل‌ها با موفقیت fetch شدن، از حلقه خارج می‌شیم
+
+        logging.warning(f"Attempt {attempt} failed. Restarting process...")
+        if tor_process:
+            tor_process.terminate()
+        time.sleep(10)  # یه مکث کوتاه قبل از تلاش بعدی
+
     workflow_end_time = datetime.now(timezone.utc)
     total_duration = (workflow_end_time - workflow_start_time).total_seconds()
 
-    if bridges is None:
+    if bridges is None or not any(bridges.values()):
         message = (
-            f"❌ <b>Failed to connect to Tor network or fetch bridges.</b>\n"
+            f"❌ <b>Failed to fetch bridges after {max_attempts} attempts.</b>\n"
             f"Workflow Start Time: {workflow_start_time.strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
             f"Total Duration: {total_duration:.2f} seconds\n"
             f"Please check logs or try again later."
@@ -302,7 +311,8 @@ async def main():
             f"🚀 <b>Latest Tor Bridges:</b>\n\n"
             f"Workflow Start Time: {workflow_start_time.strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
             f"Bridge Fetch Attempt Time: {fetch_start_time.strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
-            f"Total Duration: {total_duration:.2f} seconds\n\n"
+            f"Total Duration: {total_duration:.2f} seconds\n"
+            f"Attempts Made: {attempt}\n\n"
         )
         found_any_new = False
         all_existing_bridges = load_all_existing_bridges()
@@ -327,13 +337,13 @@ async def main():
                 message += "<i>❌ No new bridges found</i>\n\n"
 
         if not found_any_new:
-            message += "ℹ️ <b>Using existing bridges as fallback.</b>\n" if any(bridges.values()) else "❌ <b>No new bridges found.</b>\nAll fetched bridges were duplicates."
+            message += "❌ <b>No new bridges found.</b>\nAll fetched bridges were duplicates."
 
     bot = telegram.Bot(token=os.environ['TELEGRAM_BOT_TOKEN'])
     chat_id = os.environ['TELEGRAM_CHAT_ID']
 
     await send_telegram_message(bot, chat_id, message)
-    if bridges:
+    if bridges and any(bridges.values()):
         await send_bridges_file(bot, chat_id, bridges, fetch_start_time)
         await send_qr_7z(bot, chat_id, bridges)
         rewrite_and_sort_json_files(bridges)

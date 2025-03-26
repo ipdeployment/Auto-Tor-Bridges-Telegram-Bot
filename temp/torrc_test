@@ -1,0 +1,5 @@
+UseBridges 1
+    ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy
+    Bridge obfs4 15.235.167.10:9088 418136C9E3F7C8E1A2A60A618D36AE35B99CAF04 cert=iJBmTFTwF8ZpRIckIQukddL1YCYI5MxAe8esxpuQmfy0EXqX2BP8fJ1gWknQrMAR+ii0JA iat-mode=0
+    SocksPort 9051
+    Log notice file /home/runner/work/Auto-Tor-Bridges-Telegram-Bot/Auto-Tor-Bridges-Telegram-Bot/temp/logs/tor.log

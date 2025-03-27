@@ -1,27 +1,15 @@
-Mar 27 11:52:25.000 [notice] Tor 0.4.8.10 opening new log file.
-Mar 27 11:52:25.387 [notice] We compiled with OpenSSL 300000d0: OpenSSL 3.0.13 30 Jan 2024 and we are running with OpenSSL 300000d0: 3.0.13. These two versions should be binary compatible.
-Mar 27 11:52:25.389 [notice] Tor 0.4.8.10 running on Linux with Libevent 2.1.12-stable, OpenSSL 3.0.13, Zlib 1.3, Liblzma 5.4.5, Libzstd 1.5.5 and Glibc 2.39 as libc.
-Mar 27 11:52:25.389 [notice] Tor can't help you if you use it wrong! Learn how to be safe at https://support.torproject.org/faq/staying-anonymous/
-Mar 27 11:52:25.389 [notice] Read configuration file "/home/runner/work/Auto-Tor-Bridges-Telegram-Bot/Auto-Tor-Bridges-Telegram-Bot/temp/torrc_test".
-Mar 27 11:52:25.390 [notice] Opening Socks listener on 127.0.0.1:9051
-Mar 27 11:52:25.390 [notice] Opened Socks listener connection (ready) on 127.0.0.1:9051
-Mar 27 11:52:25.000 [notice] Parsing GEOIP IPv4 file /usr/share/tor/geoip.
-Mar 27 11:52:25.000 [notice] Parsing GEOIP IPv6 file /usr/share/tor/geoip6.
-Mar 27 11:52:25.000 [notice] Bootstrapped 0% (starting): Starting
-Mar 27 11:52:25.000 [notice] Starting with guard context "bridges"
-Mar 27 11:52:25.000 [notice] Delaying directory fetches: No running bridges
-Mar 27 11:52:26.000 [notice] Bootstrapped 1% (conn_pt): Connecting to pluggable transport
-Mar 27 11:52:26.000 [notice] Bootstrapped 2% (conn_done_pt): Connected to pluggable transport
-Mar 27 11:52:27.000 [notice] Bootstrapped 10% (conn_done): Connected to a relay
-Mar 27 11:52:27.000 [notice] Bootstrapped 14% (handshake): Handshaking with a relay
-Mar 27 11:52:27.000 [notice] Bootstrapped 15% (handshake_done): Handshake with a relay done
-Mar 27 11:52:27.000 [notice] Bootstrapped 20% (onehop_create): Establishing an encrypted directory connection
-Mar 27 11:52:27.000 [notice] Bootstrapped 25% (requesting_status): Asking for networkstatus consensus
-Mar 27 11:52:27.000 [notice] Bridge 'OhNoAnotherBridge8' has both an IPv4 and an IPv6 address.  Will prefer using its IPv4 address (185.85.87.222:80) based on the configured Bridge address.
-Mar 27 11:52:27.000 [notice] new bridge descriptor 'OhNoAnotherBridge8' (fresh): $118F64262B770E8B04CD9BC412B5EC5F2D0E817E~OhNoAnotherBridge8 [ekLf4QTW9tRwu5+AiaQhy2kR05wivPxjWAc3zjvFLW4] at 185.85.87.222 and [2a03:8c00:1a:10:a46a:8ff:fe73:4227]
-Mar 27 11:52:27.000 [notice] Bootstrapped 75% (enough_dirinfo): Loaded enough directory info to build circuits
-Mar 27 11:52:27.000 [warn] Only one bridge (transport: 'obfs4') is configured. You should have at least two for conflux, for any transport that is not 'snowflake'.
-Mar 27 11:52:27.000 [notice] Bootstrapped 90% (ap_handshake_done): Handshake finished with a relay to build circuits
-Mar 27 11:52:27.000 [notice] Bootstrapped 95% (circuit_create): Establishing a Tor circuit
-Mar 27 11:52:28.000 [notice] Bootstrapped 100% (done): Done
-Mar 27 11:52:39.000 [notice] Catching signal TERM, exiting cleanly.
+Mar 27 12:03:47.000 [notice] Tor 0.4.8.10 opening new log file.
+Mar 27 12:03:47.420 [notice] We compiled with OpenSSL 300000d0: OpenSSL 3.0.13 30 Jan 2024 and we are running with OpenSSL 300000d0: 3.0.13. These two versions should be binary compatible.
+Mar 27 12:03:47.422 [notice] Tor 0.4.8.10 running on Linux with Libevent 2.1.12-stable, OpenSSL 3.0.13, Zlib 1.3, Liblzma 5.4.5, Libzstd 1.5.5 and Glibc 2.39 as libc.
+Mar 27 12:03:47.422 [notice] Tor can't help you if you use it wrong! Learn how to be safe at https://support.torproject.org/faq/staying-anonymous/
+Mar 27 12:03:47.422 [notice] Read configuration file "/home/runner/work/Auto-Tor-Bridges-Telegram-Bot/Auto-Tor-Bridges-Telegram-Bot/temp/torrc_test".
+Mar 27 12:03:47.423 [notice] Opening Socks listener on 127.0.0.1:9051
+Mar 27 12:03:47.423 [notice] Opened Socks listener connection (ready) on 127.0.0.1:9051
+Mar 27 12:03:47.000 [notice] Parsing GEOIP IPv4 file /usr/share/tor/geoip.
+Mar 27 12:03:47.000 [notice] Parsing GEOIP IPv6 file /usr/share/tor/geoip6.
+Mar 27 12:03:47.000 [notice] Bootstrapped 0% (starting): Starting
+Mar 27 12:03:47.000 [notice] Starting with guard context "bridges"
+Mar 27 12:03:47.000 [notice] Delaying directory fetches: No running bridges
+Mar 27 12:03:48.000 [notice] Bootstrapped 1% (conn_pt): Connecting to pluggable transport
+Mar 27 12:03:48.000 [notice] Bootstrapped 2% (conn_done_pt): Connected to pluggable transport
+Mar 27 12:05:47.000 [notice] Catching signal TERM, exiting cleanly.

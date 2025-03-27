@@ -98,7 +98,7 @@ def start_tor(bridge):
     if os.path.exists(log_file):
         os.remove(log_file)
     process = subprocess.Popen(["tor", "-f", torrc_file])
-    max_wait = 120  # تغییر به 120 ثانیه (معادل 2 تلاش)
+    max_wait = 120  # معادل 2 تلاش
     for _ in range(max_wait // 10):
         time.sleep(10)
         if os.path.exists(log_file):
@@ -240,7 +240,7 @@ def append_to_json(file_path, new_bridges, all_existing_bridges):
 def rewrite_and_sort_json_files(bridges_dict):
     bridge_files = {
         "obfs4_ipv4": "config/obfs4_ipv4.json",
-        "obfs4_ipv６": "config/obfs4_ipv6.json",
+        "obfs4_ipv6": "config/obfs4_ipv6.json",
         "webtunnel_ipv4": "config/webtunnel_ipv4.json",
         "webtunnel_ipv6": "config/webtunnel_ipv6.json"
     }
@@ -264,7 +264,8 @@ def rewrite_and_sort_json_files(bridges_dict):
         logging.info(f"Rewrote and sorted {file_path} with {len(sorted_bridges)} bridges.")
 
 async def main():
-    all_new_bridges = {}  # برای ذخیره تمام پل‌های جدید
+    all_new_bridges = {}  # برای ذخیره پل‌های جدید
+    all_fetched_bridges = {}  # برای ذخیره همه پل‌ها (جدید و تکراری)
     all_existing_bridges = load_all_existing_bridges()
     tor_process = None
     min_new_bridges = 3  # حداقل تعداد پل‌های جدید مورد نیاز
@@ -274,6 +275,12 @@ async def main():
         if bridges is None:
             message = "❌ <b>Failed to connect to Tor network or fetch bridges.</b>\nPlease check logs or try again later."
             break
+
+        # جمع‌آوری همه پل‌ها (جدید و تکراری)
+        for bridge_type, bridge_list in bridges.items():
+            if bridge_type not in all_fetched_bridges:
+                all_fetched_bridges[bridge_type] = []
+            all_fetched_bridges[bridge_type].extend(bridge_list)
 
         # جمع‌آوری پل‌های جدید
         found_any_new = False
@@ -295,9 +302,13 @@ async def main():
 
         # شمارش کل پل‌های جدید
         total_new_bridges = sum(len(bridges) for bridges in all_new_bridges.values())
-        if total_new_bridges >= min_new_bridges or not found_any_new:
-            break  # اگر حداقل ۳ پل جدید پیدا شد یا هیچ پل جدیدی نبود، خارج شو
+        if total_new_bridges >= min_new_bridges:
+            break  # فقط وقتی حداقل ۳ پل جدید داریم خارج شو
 
+        if not found_any_new:
+            # اگر هیچ پل جدیدی پیدا نشد، ادامه بده تا حداقل ۳ پل جدید پیدا شود
+            logging.info("No new bridges found in this iteration, continuing to fetch more.")
+        
         if tor_process:
             tor_process.terminate()
             tor_process = None
@@ -319,17 +330,19 @@ async def main():
         else:
             message += "<i>❌ No new bridges found</i>\n\n"
 
-    if total_new_bridges == 0:
-        message += "❌ <b>No new bridges found.</b>\nAll fetched bridges were duplicates."
+    if total_new_bridges < min_new_bridges:
+        message += f"❌ <b>Only {total_new_bridges} new bridges found, expected at least {min_new_bridges}.</b>"
+    else:
+        message += f"✅ <b>Found {total_new_bridges} new bridges.</b>"
 
     bot = telegram.Bot(token=os.environ['TELEGRAM_BOT_TOKEN'])
     chat_id = os.environ['TELEGRAM_CHAT_ID']
 
     await send_telegram_message(bot, chat_id, message)
-    if all_new_bridges:
-        await send_bridges_file(bot, chat_id, all_new_bridges)
-        await send_qr_zip(bot, chat_id, all_new_bridges)
-        rewrite_and_sort_json_files(all_new_bridges)
+    if all_fetched_bridges:  # ارسال همه پل‌ها (جدید و تکراری) در فایل
+        await send_bridges_file(bot, chat_id, all_fetched_bridges)
+        await send_qr_zip(bot, chat_id, all_fetched_bridges)
+        rewrite_and_sort_json_files(all_new_bridges)  # فقط پل‌های جدید در JSON ذخیره شوند
 
     if tor_process:
         tor_process.terminate()

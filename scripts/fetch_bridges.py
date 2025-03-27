@@ -44,15 +44,23 @@ def save_history(last_bridge, used_bridges):
 def load_failed_bridges():
     try:
         with open(FAILED_BRIDGES_FILE, "r") as f:
-            return set(json.load(f).get("failed_bridges", []))
+            data = json.load(f)
+            return data.get("failed_bridges", []), data.get("attempts", {})
     except (FileNotFoundError, json.JSONDecodeError):
-        return set()
+        return [], {}
 
-def save_failed_bridge(bridge):
-    failed_bridges = load_failed_bridges()
-    failed_bridges.add(bridge)
+def save_failed_bridge(bridge, failed_bridges, attempts):
+    if bridge in attempts:
+        attempts[bridge] += 1
+    else:
+        attempts[bridge] = 1
+
+    if attempts[bridge] >= 2:  # Changed from 3 to 2
+        failed_bridges.append(bridge)
+        del attempts[bridge]
+
     with open(FAILED_BRIDGES_FILE, "w") as f:
-        json.dump({"failed_bridges": list(failed_bridges)}, f, indent=4)
+        json.dump({"failed_bridges": list(set(failed_bridges)), "attempts": attempts}, f, indent=4)
 
 def load_obfs4_ipv4_bridges():
     try:
@@ -98,7 +106,7 @@ def start_tor(bridge):
     if os.path.exists(log_file):
         os.remove(log_file)
     process = subprocess.Popen(["tor", "-f", torrc_file])
-    max_wait = 120  # معادل 2 تلاش
+    max_wait = 180
     for _ in range(max_wait // 10):
         time.sleep(10)
         if os.path.exists(log_file):
@@ -111,7 +119,7 @@ def start_tor(bridge):
     logging.error(f"Tor failed to bootstrap with bridge: {bridge}")
     return None
 
-async def fetch_bridges(tor_process=None):
+async def fetch_bridges(tor_process=None, used_bridge=None):
     urls = {
         "obfs4_ipv4": "https://bridges.torproject.org/bridges?transport=obfs4",
         "obfs4_ipv6": "https://bridges.torproject.org/bridges?transport=obfs4&ipv6=yes",
@@ -126,26 +134,22 @@ async def fetch_bridges(tor_process=None):
 
     history = load_history()
     used_bridges = history["used_bridges"]
-    failed_bridges = load_failed_bridges()
+    failed_bridges, attempts = load_failed_bridges()
+    failed_bridges_set = set(failed_bridges)
     default_bridge = "obfs4 72.10.162.51:12693 8F219F64DC11351F00C3A50B64990EE50E784F74 cert=/I3NYd0UcxUh83Xmsj2j8GNOeNBHmJ8jspO0/3ijqKxAlIBedJ9/AC80fXkY6IyEwXYzQQ iat-mode=1"
 
     ensure_temp_dir()
     if not tor_process:
-        obfs4_ipv4_bridges = load_obfs4_ipv4_bridges() - set(used_bridges[-1:]) - failed_bridges
+        obfs4_ipv4_bridges = load_obfs4_ipv4_bridges() - set(used_bridges) - failed_bridges_set
         if obfs4_ipv4_bridges:
             selected_bridge = random.choice(list(obfs4_ipv4_bridges))
         else:
             selected_bridge = default_bridge
         tor_process = start_tor(selected_bridge)
         if not tor_process:
-            tor_process = start_tor(selected_bridge)  # تلاش دوم
-            if not tor_process:
-                save_failed_bridge(selected_bridge)
-                return None, None
-
-    if not tor_process:
-        logging.error("No working Tor process available.")
-        return None, None
+            save_failed_bridge(selected_bridge, failed_bridges, attempts)
+            return None, None, selected_bridge
+        used_bridge = selected_bridge
 
     proxies = {
         'http': 'socks5h://127.0.0.1:9051',
@@ -161,14 +165,14 @@ async def fetch_bridges(tor_process=None):
                 soup = BeautifulSoup(response.text, 'html.parser')
 
                 bridge_elements = soup.find_all('pre', class_='bridge-line')[:5]
-                bridges = [element.text.strip() for element in bridge_elements if element.text.strip() not in failed_bridges]
+                bridges = [element.text.strip() for element in bridge_elements if element.text.strip() not in failed_bridges_set]
 
                 if not bridges:
                     all_text = soup.get_text()
                     if 'obfs4' in name:
-                        bridges = [line.strip() for line in all_text.split('\n') if 'obfs4' in line and 'cert=' in line and line.strip() not in failed_bridges][:5]
+                        bridges = [line.strip() for line in all_text.split('\n') if 'obfs4' in line and 'cert=' in line and line.strip() not in failed_bridges_set][:5]
                     elif 'webtunnel' in name:
-                        bridges = [line.strip() for line in all_text.split('\n') if 'webtunnel' in line and 'http' in line and line.strip() not in failed_bridges][:5]
+                        bridges = [line.strip() for line in all_text.split('\n') if 'webtunnel' in line and 'http' in line and line.strip() not in failed_bridges_set][:5]
 
                 all_bridges[name] = bridges
                 break
@@ -181,13 +185,14 @@ async def fetch_bridges(tor_process=None):
     if not all_bridges:
         if tor_process:
             tor_process.terminate()
-        return None, None
+        save_failed_bridge(used_bridge, failed_bridges, attempts)
+        return None, None, used_bridge
 
     if tor_process:
-        used_bridges.append(selected_bridge)
-        save_history(selected_bridge, used_bridges)
+        used_bridges.append(used_bridge)
+        save_history(used_bridge, used_bridges)
 
-    return all_bridges, tor_process
+    return all_bridges, tor_process, used_bridge
 
 async def send_telegram_message(bot, chat_id, message):
     for i in range(0, len(message), 4096):
@@ -232,7 +237,7 @@ def append_to_json(file_path, new_bridges, all_existing_bridges):
         data = {"bridges": []}
 
     unique_new_bridges = [b for b in new_bridges if b not in all_existing_bridges]
-    data["bridges"].extend(unique_new_bridges)
+    data["bridges"].extend(new_bridges)  # Add all bridges (new + duplicates) to JSON
     with open(file_path, "w") as f:
         json.dump(data, f, indent=4)
     return unique_new_bridges
@@ -264,85 +269,70 @@ def rewrite_and_sort_json_files(bridges_dict):
         logging.info(f"Rewrote and sorted {file_path} with {len(sorted_bridges)} bridges.")
 
 async def main():
-    all_new_bridges = {}  # برای ذخیره پل‌های جدید
-    all_fetched_bridges = {}  # برای ذخیره همه پل‌ها (جدید و تکراری)
-    all_existing_bridges = load_all_existing_bridges()
+    all_new_bridges = {}
+    all_fetched_bridges = {}
     tor_process = None
-    min_new_bridges = 3  # حداقل تعداد پل‌های جدید مورد نیاز
+    used_bridge = None
+    all_existing_bridges = load_all_existing_bridges()
 
     while True:
-        bridges, tor_process = await fetch_bridges(tor_process)
+        bridges, tor_process, used_bridge = await fetch_bridges(tor_process, used_bridge)
         if bridges is None:
             message = "❌ <b>Failed to connect to Tor network or fetch bridges.</b>\nPlease check logs or try again later."
             break
 
-        # جمع‌آوری همه پل‌ها (جدید و تکراری)
+        new_bridges_found = False
         for bridge_type, bridge_list in bridges.items():
-            if bridge_type not in all_fetched_bridges:
-                all_fetched_bridges[bridge_type] = []
-            all_fetched_bridges[bridge_type].extend(bridge_list)
-
-        # جمع‌آوری پل‌های جدید
-        found_any_new = False
-        bridge_files = {
-            "obfs4_ipv4": "config/obfs4_ipv4.json",
-            "obfs4_ipv6": "config/obfs4_ipv6.json",
-            "webtunnel_ipv4": "config/webtunnel_ipv4.json",
-            "webtunnel_ipv6": "config/webtunnel_ipv6.json"
-        }
-
-        for bridge_type, bridge_list in bridges.items():
-            if bridge_type not in all_new_bridges:
-                all_new_bridges[bridge_type] = []
             unique_new_bridges = [b for b in bridge_list if b not in all_existing_bridges]
-            all_new_bridges[bridge_type].extend(unique_new_bridges)
-            all_existing_bridges.update(unique_new_bridges)
+            all_fetched_bridges[bridge_type] = bridge_list  # Store all fetched bridges
             if unique_new_bridges:
-                found_any_new = True
+                new_bridges_found = True
+                all_new_bridges.setdefault(bridge_type, []).extend(unique_new_bridges)
+                all_existing_bridges.update(unique_new_bridges)
 
-        # شمارش کل پل‌های جدید
-        total_new_bridges = sum(len(bridges) for bridges in all_new_bridges.values())
-        if total_new_bridges >= min_new_bridges:
-            break  # فقط وقتی حداقل ۳ پل جدید داریم خارج شو
+        total_new_bridges = sum(len(v) for v in all_new_bridges.values())
+        if total_new_bridges >= 3 or not new_bridges_found:
+            break
 
-        if not found_any_new:
-            # اگر هیچ پل جدیدی پیدا نشد، ادامه بده تا حداقل ۳ پل جدید پیدا شود
-            logging.info("No new bridges found in this iteration, continuing to fetch more.")
-        
         if tor_process:
             tor_process.terminate()
-            tor_process = None
-        time.sleep(10)  # فاصله کوتاه بین تلاش‌ها
+        tor_process = None  # Force a new bridge on retry
 
-    # ساخت پیام نهایی
+    bot = telegram.Bot(token=os.environ['TELEGRAM_BOT_TOKEN'])
+    chat_id = os.environ['TELEGRAM_CHAT_ID']
+
     if bridges is None:
-        bot = telegram.Bot(token=os.environ['TELEGRAM_BOT_TOKEN'])
-        chat_id = os.environ['TELEGRAM_CHAT_ID']
         await send_telegram_message(bot, chat_id, message)
         return
 
     message = "🚀 <b>Latest Tor Bridges:</b>\n\n"
+    found_any_new = False
+
+    bridge_files = {
+        "obfs4_ipv4": "config/obfs4_ipv4.json",
+        "obfs4_ipv6": "config/obfs4_ipv6.json",
+        "webtunnel_ipv4": "config/webtunnel_ipv4.json",
+        "webtunnel_ipv6": "config/webtunnel_ipv6.json"
+    }
+
     for bridge_type, bridge_list in all_new_bridges.items():
+        append_to_json(bridge_files[bridge_type], all_fetched_bridges[bridge_type], all_existing_bridges)
         message += f"<b>{bridge_type.replace('_', ' ').capitalize()}:</b>\n"
         if bridge_list:
+            found_any_new = True
             for bridge in bridge_list:
                 message += f"<code>{bridge}</code>\n\n"
         else:
             message += "<i>❌ No new bridges found</i>\n\n"
 
-    if total_new_bridges < min_new_bridges:
-        message += f"❌ <b>Only {total_new_bridges} new bridges found, expected at least {min_new_bridges}.</b>"
-    else:
-        message += f"✅ <b>Found {total_new_bridges} new bridges.</b>"
-
-    bot = telegram.Bot(token=os.environ['TELEGRAM_BOT_TOKEN'])
-    chat_id = os.environ['TELEGRAM_CHAT_ID']
+    if not found_any_new:
+        message += "❌ <b>No new bridges found.</b>\nAll fetched bridges were duplicates."
 
     await send_telegram_message(bot, chat_id, message)
-    if all_fetched_bridges:  # ارسال همه پل‌ها (جدید و تکراری) در فایل
-        await send_bridges_file(bot, chat_id, all_fetched_bridges)
+    if all_fetched_bridges:
+        await send_bridges_file(bot, chat_id, all_fetched_bridges)  # Send all fetched bridges
         await send_qr_zip(bot, chat_id, all_fetched_bridges)
-        rewrite_and_sort_json_files(all_new_bridges)  # فقط پل‌های جدید در JSON ذخیره شوند
+        rewrite_and_sort_json_files(all_fetched_bridges)
 
     if tor_process:
         tor_process.terminate()

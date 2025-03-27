@@ -98,7 +98,7 @@ def start_tor(bridge):
     if os.path.exists(log_file):
         os.remove(log_file)
     process = subprocess.Popen(["tor", "-f", torrc_file])
-    max_wait = 180
+    max_wait = 120  # Changed from 180 to 120 (2 minutes)
     for _ in range(max_wait // 10):
         time.sleep(10)
         if os.path.exists(log_file):
@@ -268,7 +268,7 @@ async def main():
     if bridges is None:
         message = "❌ <b>Failed to connect to Tor network or fetch bridges.</b>\nPlease check logs or try again later."
     else:
-        message = "🚀 <b>Latest Tor Bridges:</b>\n\n"
+        message = "Get Tor Bridges:\n🚀 <b>Latest Tor Bridges:</b>\n\n"
         found_any_new = False
         all_existing_bridges = load_all_existing_bridges()
 
@@ -283,16 +283,20 @@ async def main():
             unique_new_bridges = append_to_json(bridge_files[bridge_type], bridge_list, all_existing_bridges)
             all_existing_bridges.update(unique_new_bridges)
 
-            message += f"<b>{bridge_type.replace('_', ' ').capitalize()}:</b>\n"
-            if unique_new_bridges:
+            if unique_new_bridges:  # Only include if there are new bridges
                 found_any_new = True
+                message += f"<b>{bridge_type.replace('_', ' ').capitalize()}:</b>\n"
                 for bridge in unique_new_bridges:
                     message += f"<code>{bridge}</code>\n\n"
-            else:
-                message += "<i>❌ No new bridges found</i>\n\n"
 
         if not found_any_new:
-            message += "❌ <b>No new bridges found.</b>\nAll fetched bridges were duplicates."
+            message = """Get Tor Bridges:
+🚀 <b>Latest Tor Bridges:</b>
+
+❌ <b>No new bridges found.</b>
+All fetched bridges were duplicates.
+ all fetched bridges txt
+ qr codesp"""
 
     bot = telegram.Bot(token=os.environ['TELEGRAM_BOT_TOKEN'])
     chat_id = os.environ['TELEGRAM_CHAT_ID']

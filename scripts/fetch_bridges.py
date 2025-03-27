@@ -55,7 +55,7 @@ def save_failed_bridge(bridge, failed_bridges, attempts):
     else:
         attempts[bridge] = 1
 
-    if attempts[bridge] >= 2:  # Changed from 3 to 2
+    if attempts[bridge] >= 2:
         failed_bridges.append(bridge)
         del attempts[bridge]
 
@@ -164,17 +164,20 @@ async def fetch_bridges(tor_process=None, used_bridge=None):
                 response.raise_for_status()
                 soup = BeautifulSoup(response.text, 'html.parser')
 
-                bridge_elements = soup.find_all('pre', class_='bridge-line')[:5]
-                bridges = [element.text.strip() for element in bridge_elements if element.text.strip() not in failed_bridges_set]
+                # Fetch all bridge lines from the page
+                bridge_elements = soup.find_all('pre', class_='bridge-line')
+                bridges = [element.text.strip() for element in bridge_elements if element.text.strip() and element.text.strip() not in failed_bridges_set]
 
                 if not bridges:
                     all_text = soup.get_text()
                     if 'obfs4' in name:
-                        bridges = [line.strip() for line in all_text.split('\n') if 'obfs4' in line and 'cert=' in line and line.strip() not in failed_bridges_set][:5]
+                        bridges = [line.strip() for line in all_text.split('\n') if 'obfs4' in line and 'cert=' in line and line.strip() not in failed_bridges_set]
                     elif 'webtunnel' in name:
-                        bridges = [line.strip() for line in all_text.split('\n') if 'webtunnel' in line and 'http' in line and line.strip() not in failed_bridges_set][:5]
+                        bridges = [line.strip() for line in all_text.split('\n') if 'webtunnel' in line and 'http' in line and line.strip() not in failed_bridges_set]
 
+                # Ensure we don't limit to 5 bridges unnecessarily
                 all_bridges[name] = bridges
+                logging.info(f"Fetched {len(bridges)} bridges for {name}")
                 break
             except requests.RequestException as e:
                 logging.error(f"Failed to fetch {url}: {e}")
@@ -182,7 +185,7 @@ async def fetch_bridges(tor_process=None, used_bridge=None):
                     continue
                 time.sleep(10)
 
-    if not all_bridges:
+    if not any(all_bridges.values()):
         if tor_process:
             tor_process.terminate()
         save_failed_bridge(used_bridge, failed_bridges, attempts)

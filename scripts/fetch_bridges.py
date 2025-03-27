@@ -44,15 +44,24 @@ def save_history(last_bridge, used_bridges):
 def load_failed_bridges():
     try:
         with open(FAILED_BRIDGES_FILE, "r") as f:
-            return set(json.load(f).get("failed_bridges", []))
+            return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-        return set()
+        return {"failed_bridges": {}, "attempts": {}}
 
 def save_failed_bridge(bridge):
-    failed_bridges = load_failed_bridges()
-    failed_bridges.add(bridge)
+    failed_data = load_failed_bridges()
+    failed_bridges = failed_data.get("failed_bridges", {})
+    attempts = failed_data.get("attempts", {})
+    
+    # Increment failure count
+    attempts[bridge] = attempts.get(bridge, 0) + 1
+    # Blacklist after 2 failed attempts instead of 3
+    if attempts[bridge] >= 2:
+        failed_bridges[bridge] = True
+        logging.info(f"Bridge blacklisted after 2 failures: {bridge}")
+    
     with open(FAILED_BRIDGES_FILE, "w") as f:
-        json.dump({"failed_bridges": list(failed_bridges)}, f, indent=4)
+        json.dump({"failed_bridges": failed_bridges, "attempts": attempts}, f, indent=4)
 
 def load_obfs4_ipv4_bridges():
     try:
@@ -98,7 +107,7 @@ def start_tor(bridge):
     if os.path.exists(log_file):
         os.remove(log_file)
     process = subprocess.Popen(["tor", "-f", torrc_file])
-    max_wait = 120  # Changed from 180 to 120 (2 minutes)
+    max_wait = 180
     for _ in range(max_wait // 10):
         time.sleep(10)
         if os.path.exists(log_file):
@@ -126,7 +135,8 @@ async def fetch_bridges(tor_process=None):
 
     history = load_history()
     used_bridges = history["used_bridges"]
-    failed_bridges = load_failed_bridges()
+    failed_data = load_failed_bridges()
+    failed_bridges = set(failed_data.get("failed_bridges", {}).keys())
     default_bridge = "obfs4 72.10.162.51:12693 8F219F64DC11351F00C3A50B64990EE50E784F74 cert=/I3NYd0UcxUh83Xmsj2j8GNOeNBHmJ8jspO0/3ijqKxAlIBedJ9/AC80fXkY6IyEwXYzQQ iat-mode=1"
 
     ensure_temp_dir()
@@ -268,10 +278,7 @@ async def main():
     if bridges is None:
         message = "❌ <b>Failed to connect to Tor network or fetch bridges.</b>\nPlease check logs or try again later."
     else:
-        message = "Get Tor Bridges:\n🚀 <b>Latest Tor Bridges:</b>\n\n"
-        found_any_new = False
         all_existing_bridges = load_all_existing_bridges()
-
         bridge_files = {
             "obfs4_ipv4": "config/obfs4_ipv4.json",
             "obfs4_ipv6": "config/obfs4_ipv6.json",
@@ -279,24 +286,26 @@ async def main():
             "webtunnel_ipv6": "config/webtunnel_ipv6.json"
         }
 
+        # Check if there are any new bridges at all
+        found_any_new = False
+        new_bridges_by_type = {}
         for bridge_type, bridge_list in bridges.items():
             unique_new_bridges = append_to_json(bridge_files[bridge_type], bridge_list, all_existing_bridges)
             all_existing_bridges.update(unique_new_bridges)
-
-            if unique_new_bridges:  # Only include if there are new bridges
+            new_bridges_by_type[bridge_type] = unique_new_bridges
+            if unique_new_bridges:
                 found_any_new = True
-                message += f"<b>{bridge_type.replace('_', ' ').capitalize()}:</b>\n"
-                for bridge in unique_new_bridges:
-                    message += f"<code>{bridge}</code>\n\n"
 
+        # Format the message based on whether new bridges were found
         if not found_any_new:
-            message = """Get Tor Bridges:
-🚀 <b>Latest Tor Bridges:</b>
-
-❌ <b>No new bridges found.</b>
-All fetched bridges were duplicates.
- all fetched bridges txt
- qr codesp"""
+            message = "🚀 <b>Latest Tor Bridges:</b>\n\n❌ <b>No new bridges found.</b>\nAll fetched bridges were duplicates."
+        else:
+            message = "🚀 <b>Latest Tor Bridges:</b>\n\n"
+            for bridge_type, unique_new_bridges in new_bridges_by_type.items():
+                if unique_new_bridges:  # Only include types with new bridges
+                    message += f"<b>{bridge_type.replace('_', ' ').capitalize()}:</b>\n"
+                    for bridge in unique_new_bridges:
+                        message += f"<code>{bridge}</code>\n\n"
 
     bot = telegram.Bot(token=os.environ['TELEGRAM_BOT_TOKEN'])
     chat_id = os.environ['TELEGRAM_CHAT_ID']

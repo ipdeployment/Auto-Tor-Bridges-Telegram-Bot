@@ -65,6 +65,9 @@ jobs:
           git push
 
       - name: Update Bridge List
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}  # اضافه شده
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}      # اضافه شده
         run: |
           python scripts/update_bridge_list.py
 

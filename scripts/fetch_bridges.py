@@ -48,7 +48,7 @@ def load_failed_bridges():
     except (FileNotFoundError, json.JSONDecodeError):
         return set()
 
-def save_failed_bridge(bridge, attempts=2):  # Changed from 3 to 2 attempts
+def save_failed_bridge(bridge, attempts=2):
     failed_bridges = load_failed_bridges()
     failed_bridges.add(bridge)
     with open(FAILED_BRIDGES_FILE, "w") as f:
@@ -130,6 +130,8 @@ async def fetch_bridges(tor_process=None):
     default_bridge = "obfs4 72.10.162.51:12693 8F219F64DC11351F00C3A50B64990EE50E784F74 cert=/I3NYd0UcxUh83Xmsj2j8GNOeNBHmJ8jspO0/3ijqKxAlIBedJ9/AC80fXkY6IyEwXYzQQ iat-mode=1"
 
     ensure_temp_dir()
+    selected_bridge = None  # Initialize selected_bridge
+
     if not tor_process:
         obfs4_ipv4_bridges = load_obfs4_ipv4_bridges() - set(used_bridges[-1:]) - failed_bridges
         if obfs4_ipv4_bridges:
@@ -155,7 +157,7 @@ async def fetch_bridges(tor_process=None):
 
     all_bridges = {}
     for name, url in urls.items():
-        for attempt in range(2):  # Changed to 2 attempts instead of 5
+        for attempt in range(2):
             try:
                 response = requests.get(url, headers=headers, proxies=proxies, timeout=30)
                 response.raise_for_status()
@@ -175,11 +177,12 @@ async def fetch_bridges(tor_process=None):
                 break
             except requests.RequestException as e:
                 logging.error(f"Failed to fetch {url}: {e}")
-                if attempt == 1:  # After 2 attempts
+                if attempt == 1:
                     continue
                 time.sleep(10)
 
-    if tor_process:
+    # Only update history if we used a new bridge
+    if selected_bridge and tor_process:
         used_bridges.append(selected_bridge)
         save_history(selected_bridge, used_bridges)
 

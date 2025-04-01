@@ -1,7 +1,9 @@
 name: Fetch and Share Tor Bridges
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Keep manual trigger option
+  schedule:
+    - cron: '0 */12 * * *'  # Runs every 12 hours (00:00 and 12:00 UTC)
 
 jobs:
   fetch-bridges:

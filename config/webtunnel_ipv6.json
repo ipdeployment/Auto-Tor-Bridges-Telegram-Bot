@@ -22,6 +22,7 @@
         "webtunnel [2001:db8:a42a:8cfb:7375:f4f1:2226:1d58]:443 9F83C63AE800FAA984AC61F3EF824403D5DC070C url=https://boschett0.sandrog.xyz/OqPFkE3Olv0V0hPylJFHIUh1 ver=0.0.1",
         "webtunnel [2001:db8:a436:6460:fa7b:318:4e8e:9de3]:443 F76C85011FD8C113AA00960BD9FC7F5B66F726A2 url=https://disobey.net/vM8i19mU4gvHOzRm33DaBNuM ver=0.0.1",
         "webtunnel [2001:db8:a634:bf27:a89e:4:2de:cb6]:443 8943BF53C9561C75A7302ED59575EF71E2B26562 url=https://fast.heelsn.eu/MsCfO3oc0rCsRkzDbZw8G8bT ver=0.0.2",
+        "webtunnel [2001:db8:aa16:aa07:b3:b4f0:a667:3f08]:443 775A648318DA1E1240EF0DEC038154B60696DE5B url=https://pod01.oneclickhost.eu/jLoIafiPpOBkJRJBN5mm6GPe ver=0.0.2",
         "webtunnel [2001:db8:ae49:afd7:ffdc:5de:b0b9:740c]:443 AFFCC2EBEF1955CBC7B9414B71AF733AD2EB78F2 url=https://onethirtyseven.chummer.online/pz26xsQ41QjRwkFSQ4m29vRx ver=0.0.1",
         "webtunnel [2001:db8:bc04:dcd9:32f5:eeb6:c275:4a87]:443 331633C9159C77524AB35BA9B91E2353C845EB1E url=https://piccadillywebtunnel.duckdns.org/JzwR0TZjIFr270esjw6mZFET ver=0.0.1",
         "webtunnel [2001:db8:bd88:ba8c:31d5:5bfc:e398:e22a]:443 5C416460CA3D1C72F89EAA654B668CE58943F1E0 url=https://www.readthefinemanual.net/LTi1BwOcMQmZ2kCGl1CK9plm ver=0.0.1",
@@ -33,6 +34,7 @@
         "webtunnel [2001:db8:e569:2f63:fc9:6d12:1572:bedd]:443 291666C8F9E8736771E046DAC04FA4DA35F89467 url=https://deimos.fedfe1.xyz/k2deAz76zzWAwtSOusXE ver=0.0.2",
         "webtunnel [2001:db8:f104:6599:bd56:6b9e:de19:9c5c]:443 84CD9FC75D2D777D93E08EC58293869DE374C67A url=https://webtunnel.defencegeeks.net/a36ZOiwo5I5qocKQ3SBJwNkT ver=0.0.1",
         "webtunnel [2001:db8:f3f8:1a33:dba0:17f6:35ce:24f3]:443 963668851C177DC162895A33F1473E32E1E4BE56 url=https://pod05.oneclickhost.eu/K5Fsvkz3SaWjVPm4i0vn5gIs ver=0.0.2",
+        "webtunnel [2001:db8:f4cd:7684:f375:5cf5:90e5:1b20]:443 0C754A36C8385B40C7BAC61FA8435629A0B1506B url=https://bw.jackyes.ovh/wt/HUxIfu6I1xSbNA0AwK0jUGD2 ver=0.0.1",
         "webtunnel [2001:db8:f55d:9607:2c09:5e8c:32de:9a7f]:443 F1CF5DE3C36E879573C87295017AE25E60183EEA url=https://stream.lacka.day ver=0.0.1"
     ]
 }

@@ -1,6 +1,7 @@
 {
     "bridges": [
         "webtunnel [2001:db8:241b:a34e:64af:268f:ba0f:4b65]:443 233ABF8B1A65676DD31A4EE644635FF87D19E171 url=https://2cold.independentlyreview.com/Tor_WebTunnel ver=0.0.2",
+        "webtunnel [2001:db8:259c:faa6:24a9:cce0:c60f:4642]:443 23958FC105E58061AFD2DECC61D363F28AB36490 url=https://pod02.oneclickhost.eu/lzcHh4sbo8bOTwkc4IwkSxNS ver=0.0.2",
         "webtunnel [2001:db8:28ff:ae4f:c:9ef6:1722:ac46]:443 1098B4E153AB1666B4F63F48325A103FB005940F url=https://pod04.oneclickhost.eu/FeTyRXzPPAzwIjuxzWxwl09N ver=0.0.2",
         "webtunnel [2001:db8:2e6d:f72:cedd:e521:c579:44bf]:443 E2BC4AE4EDD648DC6736EFFEDC553759C981C5D2 url=https://wildnetwork.pro/vj987mhv9c6ng9sd876sgvn ver=0.0.1",
         "webtunnel [2001:db8:3844:d495:2a1f:61c9:6e55:f39c]:443 72030A5B8EFA7C340A1ED6BC49054B7B554ADC26 url=https://ipoac.nl/NRQbyH8pPh32NQ7ncE6cs3UW ver=0.0.2",
@@ -30,6 +31,7 @@
         "webtunnel [2001:db8:becc:a93c:96b5:217:25c9:bf5e]:443 503357E571DD59E224EDBF92828344E7FDC11FFC url=https://umea.frostbay.org/TheCityOfBirches ver=0.0.1",
         "webtunnel [2001:db8:cb62:8f57:5a43:d9d0:a488:27e2]:443 16D0EF186DA080CE7A4968072920E08CA7729AED url=https://distributedcontent.website/ahxabaic5Opheir ver=0.0.1",
         "webtunnel [2001:db8:cbb2:b5c:3c78:31fd:b13d:538d]:443 0DC4519194398C4B3259774E77274DF08552E44A url=https://evillarin.com ver=0.0.2",
+        "webtunnel [2001:db8:df97:f51:d643:6c67:848a:60a7]:443 2C9FF2DE2E07A722BCF233E607947241887FF295 url=https://pod03.oneclickhost.eu/ZfIEm13F3FSDuV227jCPK0rc ver=0.0.2",
         "webtunnel [2001:db8:dfeb:8189:b107:7be4:65a0:3f64]:443 D35BF743719A3110FD895C8356056337D7D93FD8 url=https://pink.coyp.us/ScayDKFxVp1WUV47Sf1Mtm57 ver=0.0.1",
         "webtunnel [2001:db8:e3c6:f3ba:6cee:4720:a2da:822c]:443 9BDB48D89A520ACEDDEF61709EE2A497A52F2955 url=https://cool.pmvl.eu/803FifIHPKHnbjVounxSrFtg ver=0.0.1",
         "webtunnel [2001:db8:e569:2f63:fc9:6d12:1572:bedd]:443 291666C8F9E8736771E046DAC04FA4DA35F89467 url=https://deimos.fedfe1.xyz/k2deAz76zzWAwtSOusXE ver=0.0.2",

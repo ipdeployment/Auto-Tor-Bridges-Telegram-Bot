@@ -10,6 +10,8 @@ import subprocess
 import shutil
 import time
 from datetime import datetime
+import stem.control
+from stem import Signal
 
 logging.basicConfig(level=logging.INFO)
 
@@ -21,6 +23,12 @@ TEMP_DIR = "temp"
 def ensure_temp_dir():
     if not os.path.exists(TEMP_DIR):
         os.makedirs(TEMP_DIR)
+
+def reset_tor():
+    subprocess.run(["pkill", "-f", "tor"], check=False)
+    if os.path.exists(TEMP_DIR):
+        shutil.rmtree(TEMP_DIR)
+    os.makedirs(TEMP_DIR)
 
 def load_history():
     default_history = {"last_bridge": None, "used_bridges": []}
@@ -53,9 +61,7 @@ def save_failed_bridge(bridge):
     failed_bridges = failed_data.get("failed_bridges", {})
     attempts = failed_data.get("attempts", {})
     
-    # Increment failure count
     attempts[bridge] = attempts.get(bridge, 0) + 1
-    # Blacklist after 2 failed attempts instead of 3
     if attempts[bridge] >= 2:
         failed_bridges[bridge] = True
         logging.info(f"Bridge blacklisted after 2 failures: {bridge}")
@@ -88,17 +94,16 @@ def load_all_existing_bridges():
             continue
     return all_bridges
 
-def start_tor(bridge):
-    subprocess.run(["pkill", "-f", "tor"], check=False)
-
-    torrc = """
+def start_tor(bridge, port=9051):
+    reset_tor()  # بازنشانی کامل Tor قبل از شروع
+    torrc = f"""
     UseBridges 1
     ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy
     Bridge {bridge}
-    SocksPort 9051
-    Log notice file {temp_dir}/tor.log
-    """.format(bridge=bridge, temp_dir=TEMP_DIR)
-
+    SocksPort {port}
+    ControlPort 9052
+    Log notice file {TEMP_DIR}/tor.log
+    """
     torrc_file = f"{TEMP_DIR}/torrc_test"
     log_file = f"{TEMP_DIR}/tor.log"
     with open(torrc_file, "w") as f:
@@ -115,12 +120,20 @@ def start_tor(bridge):
                 log_content = log.read()
                 if "Bootstrapped 100%" in log_content:
                     logging.info(f"Tor bootstrapped successfully with bridge: {bridge}")
+                    # درخواست مدار جدید
+                    try:
+                        with stem.control.Controller.from_port(port=9052) as controller:
+                            controller.authenticate()
+                            controller.signal(Signal.NEWNYM)
+                            logging.info("Requested new Tor circuit")
+                    except Exception as e:
+                        logging.error(f"Failed to request new circuit: {e}")
                     return process
     process.terminate()
     logging.error(f"Tor failed to bootstrap with bridge: {bridge}")
     return None
 
-async def fetch_bridges(tor_process=None):
+async def fetch_bridges():
     urls = {
         "obfs4_ipv4": "https://bridges.torproject.org/bridges?transport=obfs4",
         "obfs4_ipv6": "https://bridges.torproject.org/bridges?transport=obfs4&ipv6=yes",
@@ -128,33 +141,45 @@ async def fetch_bridges(tor_process=None):
         "webtunnel_ipv6": "https://bridges.torproject.org/bridges?transport=webtunnel&ipv6=yes"
     }
 
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Safari/605.1.15",
+        "Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0",
+    ]
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0",
-        "Referer": "https://bridges.torproject.org"
+        "User-Agent": random.choice(user_agents),
+        "Referer": "https://bridges.torproject.org/",
+        "Accept-Language": "en-US,en;q=0.9",
     }
 
     history = load_history()
     used_bridges = history["used_bridges"]
     failed_data = load_failed_bridges()
     failed_bridges = set(failed_data.get("failed_bridges", {}).keys())
-    default_bridge = "obfs4 72.10.162.51:12693 8F219F64DC11351F00C3A50B64990EE50E784F74 cert=/I3NYd0UcxUh83Xmsj2j8GNOeNBHmJ8jspO0/3ijqKxAlIBedJ9/AC80fXkY6IyEwXYzQQ iat-mode=1"
+    default_bridges = [
+        "obfs4 72.10.162.51:12693 8F219F64DC11351F00C3A50B64990EE50E784F74 cert=/I3NYd0UcxUh83Xmsj2j8GNOeNBHmJ8jspO0/3ijqKxAlIBedJ9/AC80fXkY6IyEwXYzQQ iat-mode=1",
+        # می‌توانید پل‌های معتبر دیگر را اضافه کنید
+    ]
 
     ensure_temp_dir()
-    if not tor_process:
-        obfs4_ipv4_bridges = load_obfs4_ipv4_bridges() - set(used_bridges[-1:]) - failed_bridges
-        if obfs4_ipv4_bridges:
-            selected_bridge = random.choice(list(obfs4_ipv4_bridges))
-        else:
-            selected_bridge = default_bridge
-        tor_process = start_tor(selected_bridge)
-        if not tor_process:
-            tor_process = start_tor(selected_bridge)  # Retry once
-            if not tor_process:
-                save_failed_bridge(selected_bridge)
-                return None, None
+    obfs4_ipv4_bridges = load_obfs4_ipv4_bridges() - set(used_bridges[-1:]) - failed_bridges
+    available_bridges = list(obfs4_ipv4_bridges) + default_bridges
+    if not available_bridges:
+        logging.error("No available bridges to use.")
+        return None, None
+
+    tor_process = None
+    selected_bridge = None
+    for bridge in random.sample(available_bridges, len(available_bridges)):
+        logging.info(f"Trying bridge: {bridge}")
+        tor_process = start_tor(bridge)
+        if tor_process:
+            selected_bridge = bridge
+            break
+        save_failed_bridge(bridge)
 
     if not tor_process:
-        logging.error("No working Tor process available.")
+        logging.error("No working Tor bridge found.")
         return None, None
 
     proxies = {
@@ -189,13 +214,11 @@ async def fetch_bridges(tor_process=None):
                 time.sleep(10)
 
     if not all_bridges:
-        if tor_process:
-            tor_process.terminate()
+        tor_process.terminate()
         return None, None
 
-    if tor_process:
-        used_bridges.append(selected_bridge)
-        save_history(selected_bridge, used_bridges)
+    used_bridges.append(selected_bridge)
+    save_history(selected_bridge, used_bridges)
 
     return all_bridges, tor_process
 
@@ -286,7 +309,6 @@ async def main():
             "webtunnel_ipv6": "config/webtunnel_ipv6.json"
         }
 
-        # Check if there are any new bridges at all
         found_any_new = False
         new_bridges_by_type = {}
         for bridge_type, bridge_list in bridges.items():
@@ -296,13 +318,12 @@ async def main():
             if unique_new_bridges:
                 found_any_new = True
 
-        # Format the message based on whether new bridges were found
         if not found_any_new:
             message = "🚀 <b>Latest Tor Bridges:</b>\n\n❌ <b>No new bridges found.</b>\nAll fetched bridges were duplicates."
         else:
             message = "🚀 <b>Latest Tor Bridges:</b>\n\n"
             for bridge_type, unique_new_bridges in new_bridges_by_type.items():
-                if unique_new_bridges:  # Only include types with new bridges
+                if unique_new_bridges:
                     message += f"<b>{bridge_type.replace('_', ' ').capitalize()}:</b>\n"
                     for bridge in unique_new_bridges:
                         message += f"<code>{bridge}</code>\n\n"

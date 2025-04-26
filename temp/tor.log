@@ -1,43 +1,44 @@
-Apr 26 01:20:50.000 [notice] Tor 0.4.8.10 opening new log file.
-Apr 26 01:20:50.882 [notice] We compiled with OpenSSL 300000d0: OpenSSL 3.0.13 30 Jan 2024 and we are running with OpenSSL 300000d0: 3.0.13. These two versions should be binary compatible.
-Apr 26 01:20:50.884 [notice] Tor 0.4.8.10 running on Linux with Libevent 2.1.12-stable, OpenSSL 3.0.13, Zlib 1.3, Liblzma 5.4.5, Libzstd 1.5.5 and Glibc 2.39 as libc.
-Apr 26 01:20:50.884 [notice] Tor can't help you if you use it wrong! Learn how to be safe at https://support.torproject.org/faq/staying-anonymous/
-Apr 26 01:20:50.884 [notice] Read configuration file "/home/runner/work/Auto-Tor-Bridges-Telegram-Bot/Auto-Tor-Bridges-Telegram-Bot/temp/torrc_test".
-Apr 26 01:20:50.885 [warn] ControlPort is open, but no authentication method has been configured.  This means that any program on your computer can reconfigure your Tor.  That's bad!  You should upgrade your Tor controller as soon as possible.
-Apr 26 01:20:50.886 [notice] Opening Socks listener on 127.0.0.1:9051
-Apr 26 01:20:50.886 [notice] Opened Socks listener connection (ready) on 127.0.0.1:9051
-Apr 26 01:20:50.886 [notice] Opening Control listener on 127.0.0.1:9052
-Apr 26 01:20:50.886 [notice] Opened Control listener connection (ready) on 127.0.0.1:9052
-Apr 26 01:20:50.000 [notice] Parsing GEOIP IPv4 file /usr/share/tor/geoip.
-Apr 26 01:20:50.000 [notice] Parsing GEOIP IPv6 file /usr/share/tor/geoip6.
-Apr 26 01:20:51.000 [notice] Bootstrapped 0% (starting): Starting
-Apr 26 01:20:51.000 [notice] Starting with guard context "bridges"
-Apr 26 01:20:51.000 [notice] Delaying directory fetches: No running bridges
-Apr 26 01:20:52.000 [notice] Bootstrapped 1% (conn_pt): Connecting to pluggable transport
-Apr 26 01:20:52.000 [notice] Bootstrapped 2% (conn_done_pt): Connected to pluggable transport
-Apr 26 01:20:52.000 [notice] Bootstrapped 10% (conn_done): Connected to a relay
-Apr 26 01:20:52.000 [notice] Bootstrapped 14% (handshake): Handshaking with a relay
-Apr 26 01:20:52.000 [notice] Bootstrapped 15% (handshake_done): Handshake with a relay done
-Apr 26 01:20:52.000 [notice] Bootstrapped 20% (onehop_create): Establishing an encrypted directory connection
-Apr 26 01:20:52.000 [notice] Bootstrapped 25% (requesting_status): Asking for networkstatus consensus
-Apr 26 01:20:52.000 [notice] new bridge descriptor 'CrazyOnion72' (fresh): $E4BFB6D0104B39023047F0DBEC6968D342C663B7~CrazyOnion72 [/+yCuHAqQEg8Nquzp6c5Zw0kRc5pBU/5t4yR0g2OMHk] at 178.196.147.159
-Apr 26 01:20:53.000 [notice] Bootstrapped 30% (loading_status): Loading networkstatus consensus
-Apr 26 01:20:57.000 [notice] I learned some more directory information, but not enough to build a circuit: We have no usable consensus.
-Apr 26 01:20:57.000 [notice] Bootstrapped 40% (loading_keys): Loading authority key certs
-Apr 26 01:20:57.000 [notice] The current consensus has no exit nodes. Tor can only build internal paths, such as paths to onion services.
-Apr 26 01:20:57.000 [notice] Bootstrapped 45% (requesting_descriptors): Asking for relay descriptors
-Apr 26 01:20:57.000 [notice] I learned some more directory information, but not enough to build a circuit: We need more microdescriptors: we have 0/8708, and can only build 0% of likely paths. (We have 100% of guards bw, 0% of midpoint bw, and 0% of end bw (no exits in consensus, using mid) = 0% of path bw.)
-Apr 26 01:20:57.000 [notice] I learned some more directory information, but not enough to build a circuit: We need more microdescriptors: we have 0/8708, and can only build 0% of likely paths. (We have 100% of guards bw, 0% of midpoint bw, and 0% of end bw (no exits in consensus, using mid) = 0% of path bw.)
-Apr 26 01:20:57.000 [notice] Bootstrapped 50% (loading_descriptors): Loading relay descriptors
-Apr 26 01:20:58.000 [notice] The current consensus contains exit nodes. Tor can build exit and internal paths.
-Apr 26 01:21:25.000 [notice] Bootstrapped 55% (loading_descriptors): Loading relay descriptors
-Apr 26 01:21:25.000 [notice] Bootstrapped 61% (loading_descriptors): Loading relay descriptors
-Apr 26 01:21:25.000 [notice] Bootstrapped 66% (loading_descriptors): Loading relay descriptors
-Apr 26 01:21:25.000 [notice] Bootstrapped 73% (loading_descriptors): Loading relay descriptors
-Apr 26 01:21:25.000 [notice] Bootstrapped 75% (enough_dirinfo): Loaded enough directory info to build circuits
-Apr 26 01:21:26.000 [warn] Only one bridge (transport: 'obfs4') is configured. You should have at least two for conflux, for any transport that is not 'snowflake'.
-Apr 26 01:21:26.000 [notice] Bootstrapped 90% (ap_handshake_done): Handshake finished with a relay to build circuits
-Apr 26 01:21:26.000 [notice] Bootstrapped 95% (circuit_create): Establishing a Tor circuit
-Apr 26 01:21:26.000 [notice] Bootstrapped 100% (done): Done
-Apr 26 01:21:30.000 [notice] New control connection opened from 127.0.0.1.
-Apr 26 01:21:37.000 [notice] Catching signal TERM, exiting cleanly.
+Apr 26 12:20:18.000 [notice] Tor 0.4.8.10 opening new log file.
+Apr 26 12:20:18.267 [notice] We compiled with OpenSSL 300000d0: OpenSSL 3.0.13 30 Jan 2024 and we are running with OpenSSL 300000d0: 3.0.13. These two versions should be binary compatible.
+Apr 26 12:20:18.269 [notice] Tor 0.4.8.10 running on Linux with Libevent 2.1.12-stable, OpenSSL 3.0.13, Zlib 1.3, Liblzma 5.4.5, Libzstd 1.5.5 and Glibc 2.39 as libc.
+Apr 26 12:20:18.269 [notice] Tor can't help you if you use it wrong! Learn how to be safe at https://support.torproject.org/faq/staying-anonymous/
+Apr 26 12:20:18.269 [notice] Read configuration file "/home/runner/work/Auto-Tor-Bridges-Telegram-Bot/Auto-Tor-Bridges-Telegram-Bot/temp/torrc_test".
+Apr 26 12:20:18.270 [warn] ControlPort is open, but no authentication method has been configured.  This means that any program on your computer can reconfigure your Tor.  That's bad!  You should upgrade your Tor controller as soon as possible.
+Apr 26 12:20:18.270 [notice] Opening Socks listener on 127.0.0.1:9051
+Apr 26 12:20:18.270 [notice] Opened Socks listener connection (ready) on 127.0.0.1:9051
+Apr 26 12:20:18.270 [notice] Opening Control listener on 127.0.0.1:9052
+Apr 26 12:20:18.270 [notice] Opened Control listener connection (ready) on 127.0.0.1:9052
+Apr 26 12:20:18.000 [notice] Parsing GEOIP IPv4 file /usr/share/tor/geoip.
+Apr 26 12:20:18.000 [notice] Parsing GEOIP IPv6 file /usr/share/tor/geoip6.
+Apr 26 12:20:18.000 [notice] Bootstrapped 0% (starting): Starting
+Apr 26 12:20:18.000 [notice] Starting with guard context "bridges"
+Apr 26 12:20:18.000 [notice] Delaying directory fetches: No running bridges
+Apr 26 12:20:19.000 [notice] Bootstrapped 1% (conn_pt): Connecting to pluggable transport
+Apr 26 12:20:19.000 [notice] Bootstrapped 2% (conn_done_pt): Connected to pluggable transport
+Apr 26 12:20:19.000 [notice] Bootstrapped 10% (conn_done): Connected to a relay
+Apr 26 12:20:19.000 [notice] Bootstrapped 14% (handshake): Handshaking with a relay
+Apr 26 12:20:20.000 [notice] Bootstrapped 15% (handshake_done): Handshake with a relay done
+Apr 26 12:20:20.000 [notice] Bootstrapped 20% (onehop_create): Establishing an encrypted directory connection
+Apr 26 12:20:20.000 [notice] Bootstrapped 25% (requesting_status): Asking for networkstatus consensus
+Apr 26 12:20:20.000 [notice] Bridge 'CSGuardTorBridge' has both an IPv4 and an IPv6 address.  Will prefer using its IPv4 address (37.27.122.122:8088) based on the configured Bridge address.
+Apr 26 12:20:20.000 [notice] new bridge descriptor 'CSGuardTorBridge' (fresh): $7F6051103D00F6E6615C5C8D92C4B648B32331D3~CSGuardTorBridge [bbnD2WacA0q3prAx6Lzt946bHD113wVkG4RCjcQFT7s] at 37.27.122.122 and [2a01:4f9:3070:2c54::122]
+Apr 26 12:20:21.000 [notice] Bootstrapped 30% (loading_status): Loading networkstatus consensus
+Apr 26 12:20:23.000 [notice] I learned some more directory information, but not enough to build a circuit: We have no usable consensus.
+Apr 26 12:20:23.000 [notice] Bootstrapped 40% (loading_keys): Loading authority key certs
+Apr 26 12:20:23.000 [notice] The current consensus has no exit nodes. Tor can only build internal paths, such as paths to onion services.
+Apr 26 12:20:23.000 [notice] Bootstrapped 45% (requesting_descriptors): Asking for relay descriptors
+Apr 26 12:20:23.000 [notice] I learned some more directory information, but not enough to build a circuit: We need more microdescriptors: we have 0/8636, and can only build 0% of likely paths. (We have 100% of guards bw, 0% of midpoint bw, and 0% of end bw (no exits in consensus, using mid) = 0% of path bw.)
+Apr 26 12:20:23.000 [notice] Bootstrapped 50% (loading_descriptors): Loading relay descriptors
+Apr 26 12:20:23.000 [notice] I learned some more directory information, but not enough to build a circuit: We need more microdescriptors: we have 0/8636, and can only build 0% of likely paths. (We have 100% of guards bw, 0% of midpoint bw, and 0% of end bw (no exits in consensus, using mid) = 0% of path bw.)
+Apr 26 12:20:23.000 [notice] The current consensus contains exit nodes. Tor can build exit and internal paths.
+Apr 26 12:20:25.000 [notice] Bootstrapped 55% (loading_descriptors): Loading relay descriptors
+Apr 26 12:20:26.000 [notice] Bootstrapped 61% (loading_descriptors): Loading relay descriptors
+Apr 26 12:20:26.000 [notice] Bootstrapped 67% (loading_descriptors): Loading relay descriptors
+Apr 26 12:20:26.000 [notice] Bootstrapped 73% (loading_descriptors): Loading relay descriptors
+Apr 26 12:20:26.000 [notice] Bootstrapped 75% (enough_dirinfo): Loaded enough directory info to build circuits
+Apr 26 12:20:26.000 [warn] Only one bridge (transport: 'obfs4') is configured. You should have at least two for conflux, for any transport that is not 'snowflake'.
+Apr 26 12:20:26.000 [notice] Bootstrapped 90% (ap_handshake_done): Handshake finished with a relay to build circuits
+Apr 26 12:20:26.000 [notice] Bootstrapped 95% (circuit_create): Establishing a Tor circuit
+Apr 26 12:20:27.000 [notice] Bootstrapped 100% (done): Done
+Apr 26 12:20:28.000 [notice] New control connection opened from 127.0.0.1.
+Apr 26 12:20:34.000 [notice] Catching signal TERM, exiting cleanly.

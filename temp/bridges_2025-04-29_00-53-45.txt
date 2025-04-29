@@ -1,0 +1,18 @@
+Obfs4 ipv4:
+obfs4 172.82.64.66:443 D8B86CCA6A0C73C486AD7EC4A9A90C086817804C cert=cP+yBpR35yi/g1rACmr2lb/D2ne0phAaQO4S+YEndl0+uBtZ2cOnuI0NZpQYmfYvJ7DERQ iat-mode=0
+
+obfs4 135.148.237.230:443 E4EF197724288731D0586A9F11627C6699B3B32E cert=zYO4XT3p7rBj6WP18RRmQrn7qoNMHH6aAe9VCyBp4EkQ4UQnIph/W4iWclz5ecbFhGOLFw iat-mode=0
+
+Obfs4 ipv6:
+obfs4 [2a0a:4587:2012:1::251]:11251 BDE1BBC62DB8EBAE17EEF369A7271512C8B29D0F cert=uG0DsVlVpmb11kIU6HoKsOphEkdpWYfoAnxUh0Z9AGL7kDVxgLTquKS5VUWaS/tijZykJA iat-mode=0
+
+Webtunnel ipv4:
+webtunnel [2001:db8:cfe7:edf6:3a09:e2a3:668d:4e73]:443 F86E5FA2FD7FD0B358919C5396C22705F7911AE0 url=https://fastdeliverynetwork.website/Hai1aeJaipooliz ver=0.0.1
+
+webtunnel [2001:db8:aa65:68cf:bd2d:50fe:784f:1b24]:443 08B85FE2212DC548403FB684265D2B63B9C2C237 url=https://awsfft.cdn.leohearts.com/R3lHLJhq7kR54k2d9iDATWhz ver=0.0.1
+
+Webtunnel ipv6:
+webtunnel [2001:db8:cfe7:edf6:3a09:e2a3:668d:4e73]:443 F86E5FA2FD7FD0B358919C5396C22705F7911AE0 url=https://fastdeliverynetwork.website/Hai1aeJaipooliz ver=0.0.1
+
+webtunnel [2001:db8:aa65:68cf:bd2d:50fe:784f:1b24]:443 08B85FE2212DC548403FB684265D2B63B9C2C237 url=https://awsfft.cdn.leohearts.com/R3lHLJhq7kR54k2d9iDATWhz ver=0.0.1
+

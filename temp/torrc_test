@@ -1,6 +1,6 @@
 UseBridges 1
     ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy
-    Bridge obfs4 89.40.206.72:37171 2CC3655B4CE0DC10FD8E67457D8F7A0F2FEFDAC0 cert=/IK083k+A2mGBVAE622gy81kn409GY+84DP8+L8ovLdMPY1UcPano+mA3FAvnz0WrNmVVg iat-mode=0
+    Bridge obfs4 37.120.186.235:4272 FEDFAAE961A8121091DCF8F993668D033E6D693C cert=pYhT/MaczseJRPFb94zyaf9P4V6Q8FT7UFxk7LpXr3kT01NKhdddgbPSwbWguLjR8c+Pcg iat-mode=0
     SocksPort 9051
     ControlPort 9052
     Log notice file temp/tor.log

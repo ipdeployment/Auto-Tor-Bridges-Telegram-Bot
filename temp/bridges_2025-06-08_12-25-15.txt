@@ -1,0 +1,18 @@
+Obfs4 ipv4:
+obfs4 62.174.146.44:37739 76C3B57D603894D565290184AFB10FAAE599D7D3 cert=B0+pXYVosfxndnK8/kpJScbYgK+yJP21IWi9VN8d7BXdXT7dusbhQWxLl4WXLTF1gHBOQQ iat-mode=0
+
+Obfs4 ipv6:
+obfs4 [2a01:239:303:200::1]:443 867CC4E415999336F7803F9B5E468B208D59C9DC cert=TdArTFG+fRyETSrPHFJKAHsfbABtynbTx04qpOcBzAwZqjh88gZJtGCRyyOA4/hYi1NbQw iat-mode=0
+
+obfs4 [2a02:a03f:61cd:5700:5bb1:6d52:51ba:1f37]:25082 B8A469A2F9A93C2A8E0299991DAD972AA251B63A cert=oWs63wuQ2Py9a5vutKzyzkY4ZrONb9GCTW7U+eBdPWJy40AgO3pNotQwhtxrzRWkwiu8Ig iat-mode=0
+
+Webtunnel ipv4:
+webtunnel [2001:db8:1178:dc13:afaf:da8e:f592:398a]:443 07C77888D2367C25CA875E2174D9B225140940E9 url=https://nextcloud.privacy-vbox.de/iJmug5bRcsKeVv45h7a0fvkM ver=0.0.2
+
+webtunnel [2001:db8:cb0d:478a:6b61:1514:9757:53c1]:443 1FE8C81ED04C5F1707ED0761A32D3B1E27F64B6C url=https://blog.gus.computer/U7a5bfqOUsCsH4i4yue1744l ver=0.0.1
+
+Webtunnel ipv6:
+webtunnel [2001:db8:1178:dc13:afaf:da8e:f592:398a]:443 07C77888D2367C25CA875E2174D9B225140940E9 url=https://nextcloud.privacy-vbox.de/iJmug5bRcsKeVv45h7a0fvkM ver=0.0.2
+
+webtunnel [2001:db8:cb0d:478a:6b61:1514:9757:53c1]:443 1FE8C81ED04C5F1707ED0761A32D3B1E27F64B6C url=https://blog.gus.computer/U7a5bfqOUsCsH4i4yue1744l ver=0.0.1
+

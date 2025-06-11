@@ -1,0 +1,18 @@
+Obfs4 ipv4:
+obfs4 91.107.237.115:9495 8731E9B0C38065C4416EB8071967C0EC965F3A3A cert=gGJzshnoYcMp6We9gsVD2sA6r01HYDk2sq7cJG4tUdrDenzKtgly61hR9LL5wBFeWXo+NQ iat-mode=0
+
+obfs4 81.6.45.148:9143 B479C6CD6E9794DE50E07BFA3178890EAE4BF6C7 cert=07J+GnxmvNIdIilvdKF6h4kDNjxlqPJQy3WcqSovj0azqocsnLjwjR33A7kt1VWod9tdHQ iat-mode=0
+
+Obfs4 ipv6:
+obfs4 [2a02:168:673b::1]:9143 B479C6CD6E9794DE50E07BFA3178890EAE4BF6C7 cert=07J+GnxmvNIdIilvdKF6h4kDNjxlqPJQy3WcqSovj0azqocsnLjwjR33A7kt1VWod9tdHQ iat-mode=0
+
+Webtunnel ipv4:
+webtunnel [2001:db8:1d30:ff54:bba:de27:3861:ff8c]:443 93F50F39F559F2BC2D0C8F936239017AC85AA9BE url=https://rabbithole2.net/4kHLbQkqWJV0Jxfk28H5MySc ver=0.0.1
+
+webtunnel [2001:db8:5de4:df2c:316:a7d1:fee4:d128]:443 A35EA8E81BEC48C15960D497DD9024F430F6EA8F url=https://corazon.gateplanets.com/vt1F7zWiucmEjdoh ver=0.0.2
+
+Webtunnel ipv6:
+webtunnel [2001:db8:1d30:ff54:bba:de27:3861:ff8c]:443 93F50F39F559F2BC2D0C8F936239017AC85AA9BE url=https://rabbithole2.net/4kHLbQkqWJV0Jxfk28H5MySc ver=0.0.1
+
+webtunnel [2001:db8:5de4:df2c:316:a7d1:fee4:d128]:443 A35EA8E81BEC48C15960D497DD9024F430F6EA8F url=https://corazon.gateplanets.com/vt1F7zWiucmEjdoh ver=0.0.2
+

@@ -1,0 +1,16 @@
+Obfs4 ipv4:
+obfs4 192.9.173.139:6970 30C2B201652AF9F2D14EBAEBDEA4D69171C63C02 cert=O+1n4Sbo/Lk18gjfTieAYqFjB5GDDkEY+nn3BqxZsyWz9qH/Z40nChs9QsccOOSoxlEtcA iat-mode=0
+
+Obfs4 ipv6:
+obfs4 [2a0a:4587:2011::32]:41209 32EF45EC5ECD3027B6DEE20E2B7D576AD35A8A8E cert=p9L6+25s8bnfkye1ZxFeAE4mAGY7DH4Gaj7dxngIIzP9BtqrHHwZXdjMK0RVIQ34C7aqZw iat-mode=2
+
+Webtunnel ipv4:
+webtunnel [2001:db8:75db:c6f2:1dae:121:7a04:9e9d]:443 4B673DF159CFC12AC91FC2E6AC3047FF2183FCEA url=http://freifunk.ckgc.de/xBKEzZunnc3A5pcf6jaeVyPL ver=0.0.1
+
+webtunnel [2001:db8:c28c:4e5f:ebd4:5fa5:dea9:f901]:443 2307A05F4EA0E8E215100D3934157213E564AE7E url=https://f.ufw.icu/eg9PbqaxSvIbjtbVZMt9H7xF ver=0.0.1
+
+Webtunnel ipv6:
+webtunnel [2001:db8:75db:c6f2:1dae:121:7a04:9e9d]:443 4B673DF159CFC12AC91FC2E6AC3047FF2183FCEA url=http://freifunk.ckgc.de/xBKEzZunnc3A5pcf6jaeVyPL ver=0.0.1
+
+webtunnel [2001:db8:c28c:4e5f:ebd4:5fa5:dea9:f901]:443 2307A05F4EA0E8E215100D3934157213E564AE7E url=https://f.ufw.icu/eg9PbqaxSvIbjtbVZMt9H7xF ver=0.0.1
+
